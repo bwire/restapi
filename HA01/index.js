@@ -1,4 +1,6 @@
-// primary API
+/* Homework assignment #01
+   Simple RESTFul service with only one 'hello' route.
+*/
 
 const config = require("./config");
 
@@ -8,15 +10,16 @@ const url = require("url");
 const StringDecoder = require("string_decoder").StringDecoder;
 const fs = require('fs');
 
-// start http server
+// starting http server
 const httpServer = http.createServer(function(req, res) {
   unifiedServer(req, res);
 });
+
 httpServer.listen(config.httpPort, function() {
   console.log(`The server is listening on port ${config.httpPort} with ${config.envName} now...`);
 });
 
-// start https server
+// starting https server
 const httpsServerOptions = {
   'key': fs.readFileSync('./https/key.pm'),
   'cert': fs.readFileSync('./https/cert.pe')
@@ -33,11 +36,6 @@ httpsServer.listen(config.httpsPort, function() {
 // handlers 
 const handlers = {};
 
-// simple ping handler
-handlers.ping = function(data, callback) {
-  callback(200);
-};
-
 handlers.hello = function(data, callback) {
   callback(200, {
     requestMethod: data.method,
@@ -51,7 +49,6 @@ handlers.notFoundHandler = function(data, callback) {
 };
 
 var router = {
-  'ping': handlers.ping,
   'hello': handlers.hello
 };
 

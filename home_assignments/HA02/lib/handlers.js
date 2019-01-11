@@ -3,24 +3,24 @@
 //----------------------------------------------------------------------------------------------------
 
 // dependencies
-const usersHandlers = require('./handlers/usersHandlers.js');
-const tokensHandlers = require('./handlers/tokensHandlers.js');
+const userHandlers = require("./handlers/userHandlers");
 
-// handlers container
-const handlers = {};
+const lib = {};
 
-// Main dispatchers
-handlers.users = usersHandlers;
-handlers.tokens = tokensHandlers;
-
+// main dispatchers
+lib.users = userHandlers;
 
 //----------------------------------------------------------------------------------------------------
 // Service
-//----------------------------------------------------------------------------------------------------
 
-// not found handler
-handlers.notFoundHandler = function(data, callback) {
- callback(404);
+// simple ping handler
+lib.ping = function(data, callback) {
+  callback(200);
 };
 
-module.exports = handlers;
+// not found handler
+lib.notFoundHandler = function(data, callback) {
+  callback(404);
+};
+
+module.exports = lib;

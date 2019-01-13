@@ -3,12 +3,14 @@
 //----------------------------------------------------------------------------------------------------
 
 // dependencies
-const userHandlers = require("./handlers/userHandlers");
+const _userHandlers = require("./handlers/userHandlers");
+const _tokenHadlers = require("./handlers/tokenHandlers")
 
 const lib = {};
 
 // main dispatchers
-lib.users = userHandlers;
+lib.users = _userHandlers;
+lib.tokens = _tokenHadlers;
 
 //----------------------------------------------------------------------------------------------------
 // Service

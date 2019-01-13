@@ -37,13 +37,14 @@ const httpsServer = https.createServer(httpsServerOptions, (req, res) => {
 // main router (ADD ROUTES HERE!!)
 const router = {
   'ping': handlers.ping,
-  'users': handlers.users
+  'users': handlers.users,
+  "tokens": handlers.tokens
 };
 
 
 const unifiedServer = function(req, res) {
   // get url and parse it
-  const parsedUrl = url.parse(req.url);
+  const parsedUrl = url.parse(req.url, true);
 
   // get the path
   const path = parsedUrl.pathname;
@@ -68,8 +69,8 @@ const unifiedServer = function(req, res) {
   });
 
   req.on('end', () => {
-    buffer = +decoder.end();
-
+    buffer += decoder.end();
+    
     // choose the handler request should go to
     const choosenHandler = typeof (router[trimmedPath]) !== undefined ?
       router[trimmedPath] : handlers.notFoundHandler;

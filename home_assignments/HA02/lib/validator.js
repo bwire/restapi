@@ -19,8 +19,13 @@ lib.validate = function(fieldsString, container) {
   const fields = fieldsString.split(', ');
   // container for the result of validation
   const inputData = {};
+
+  inputData.hasErrors = function() {
+    return this._errors ? true : false;
+  }
+
   // Check that 'fields is an array'
-  if (typeof (fileds) === 'object' && fields instanceof Array) {
+  if (typeof (fields) === 'object' && fields instanceof Array) {
     if (fields.length > 0) {
       // perform validation for each field in the input array
       fields.forEach((field) => {
@@ -40,10 +45,6 @@ lib.validate = function(fieldsString, container) {
     }
   } else {
     addError(inputData, 'Invalid input fields description format!');
-  }
-
-  inputData.hasErrors = function() {
-    return this._errors ? true : false;
   }
 
   return inputData;
@@ -66,6 +67,9 @@ function getValidationFunctionData(container, field) {
   if (field == 'password') {
     fnData.func = validateString;
     fnData.params = [field, container[field],, 7, 20];
+  } else if (field == 'id') {
+    fnData.func = validateString;
+    fnData.params = [field, container[field], 20];
   } else if (field == 'firstName' || field == 'lastName' || field == 'address') {
     fnData.func = validateString;
     fnData.params = [field, container[field]];

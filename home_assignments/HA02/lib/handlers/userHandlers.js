@@ -45,6 +45,8 @@ lib.post = (data, callback) => {
           // store the user
           _data.create('users', input.eMail, userObject, (error) => {
             if (!error) {
+              // remove hashed password form the user object before return it to the requester
+              delete userObject.password;
               callback(200, userObject);
             } else {
               console.log(error);
@@ -81,9 +83,9 @@ lib.get = (data, callback) => {
   if (input.eMail) {
     _data.read('users', input.eMail, (error, userData) => {
       if (!error && userData) {
-        // remove hashed password form the user obejct before return it to the requester
-        delete data.password;
-        callback(200, data);
+        // remove hashed password form the user object before return it to the requester
+        delete userData.password;
+        callback(200, userData);
       } else {
         callback(404, {
           'Error': 'No user with the specified e-mail found!'
@@ -101,7 +103,6 @@ lib.get = (data, callback) => {
 // Requested data: eMail
 // Optional data: password, firstName, lastName, address (at least one must be specified)
 lib.put = function(data, callback) {
-
   // validtate fields
   const input = _validator.validate("eMail, firstName, lastName, address, password", data.payload);
   if (!input.hasErrors()) {
@@ -109,7 +110,7 @@ lib.put = function(data, callback) {
     if (input.firstName || input.lastName || input.address || input.password) {
       // Look up the user
       _data.read('users', input.eMail, (error, userData) => {
-        if (!error && data) {
+        if (!error && userData) {
           // update necessary fields
           if (input.firstName)
             userData.firstName = input.firstName;
@@ -120,11 +121,11 @@ lib.put = function(data, callback) {
           if (input.password)
             userData.password = _helpers.hash(input.password);
 
-
           // store updated data
           _data.update('users', input.eMail, userData, (error) => {
             if (!error) {
-              callback(200);
+              delete userData.password;
+              callback(200, userData);
             } else {
               callback(500, {
                 'Error': 'Could not update the user'
@@ -152,8 +153,7 @@ lib.put = function(data, callback) {
 // USERS - DELETE
 // Requested data: eMail
 // Optional data: none
-lib.delete = (data, callback) => {
-
+lib.delete = function(data, callback) {
   // validatate eMail address
   const input = _validator.validate("eMail", data.queryStringObject);
   if (input.eMail) {
@@ -181,5 +181,6 @@ lib.delete = (data, callback) => {
     });
   }
 };
+
 
 module.exports = users;

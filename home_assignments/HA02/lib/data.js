@@ -6,6 +6,8 @@
 const fs = require("fs");
 const path = require("path");
 
+const helpers = require('./helpers');
+
 // container for the module to be exported
 const lib = {};
 
@@ -16,7 +18,7 @@ function baseDir() {
 
 // compose file name according to parameters
 function fileName(dir, file) {
-  return baseDir + dir + '/' + file + '.json';
+  return baseDir() + dir + '/' + file + '.json';
 }
 
 // write to the file and close it
@@ -52,7 +54,16 @@ lib.create = (dir, file, data, callback) => {
 // read data from a file
 lib.read = (dir, file, callback) => {
   fs.readFile(fileName(dir, file), 'utf8', (error, data) => {
-    callback(error, data);
+    if (!error && data) {
+      const parsedData = helpers.parseJSONToObject(data);
+      if (parsedData) {
+        callback(false, parsedData);
+      } else {
+        callback(error, data);
+      }
+    } else {
+      callback(error);
+    };
   });
 };
 
@@ -80,7 +91,7 @@ lib.update = (dir, file, data, callback) => {
 
 // delete a file
 lib.delete = (dir, file, callback) => {
-  fs.unlink(lib.fileName(dir, file), (error) => {
+  fs.unlink(fileName(dir, file), (error) => {
     if (!error) {
       callback(false);
     } else {

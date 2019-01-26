@@ -89,8 +89,13 @@ lib.validateToken = function(headers, callback) {
 };
 
 // order data validating
-lib.validateOrderItem = function(orderItems, callback) {
-  
+lib.validateCartItem = function(item, idx) {
+  let input = lib.validate("menuItemID, qty, price", item);
+  if (!input.hasErrors) {
+    // name doesn't need to be checked. Just add it to the result
+    input.name = item.name;
+  };
+  return input;
 };
 
 
@@ -113,7 +118,10 @@ function getValidationFunctionData(container, field) {
   } else if (field == 'id') {
     fnData.func = validateString;
     fnData.params = [field, container[field], 20];
-  } else if (field == 'menuItemID' || field == 'qty') {
+  } else if (field == 'menuItemID') {
+    fnData.func = validateItemID;
+    fnData.params = [field, container[field]];
+  } else if (field == 'qty') {
     fnData.func = validateNumber;
     fnData.params = [field, container[field], false];
   } else if (field == 'price') {
@@ -170,38 +178,22 @@ function validateString(field, value, len, lbound, rbound) {
 }
 
 // Validate boolean field (with comparison to the expected value)
-function validateFlag(field, value, price) {
-  var noErrors = true;
-  if (typeof(value) == 'boolean') { 
-      this[field] = value;
-  } else {
-    addError(this, "Invalid data type for the field '" + field + "' provided");
-    noErrors = false; 
-  };
-}
-
-// Validate boolean field (with comparison to the expected value)
 function validateNumber(field, value, isPrice) {
-  var noErrors = true;
   if ((typeof(value) == 'number') && ((isPrice && value.toString().match(/^\d+(\.\d{1,2})?$/)) || !isPrice)) {
     this[field] = value;
   } else {
     addError(this, "Invalid data type for the field '" + field + "' provided");
-    noErrors = false; 
   };
 }
 
 // Validate boolean field (with comparison to the expected value)
 function validateFlag(field, value) {
-  var noErrors = true;
   if (typeof(value) == 'boolean') {
     this[field] = value;
   } else {
     addError(this, "Invalid data type for the field '" + field + "' provided");
-    noErrors = false; 
   };
 }
-
 
 // Validate the e-mail string
 // (Borrowed from here: https://flaviocopes.com/how-to-validate-email-address-javascript/)
@@ -213,6 +205,23 @@ function validateEMail(field, value) {
     // if e-mail is valid - create field in the inputData object
     this[field] = value;
   }
+}
+
+function validateItemID(field, value) {
+  if (typeof(value) == 'number') {
+    let fCheck = (elem, idx, arr) => {
+      if (elem.menuItemID == value) 
+        return elem;
+    };
+
+    if (_menu.find(fCheck)) {
+      this[field] = value;
+    } else {
+      addError(this, `Menu item with the specified id (${value}) not found`); 
+    }
+  } else {
+    addError(this, "Invalid menu item id value");
+  };  
 }
 
 module.exports = lib;

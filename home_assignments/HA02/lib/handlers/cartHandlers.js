@@ -42,10 +42,10 @@ lib.get = function (data, callback) {
 // Cart - PUT
 // Requested data: none
 // Optional data: none
-lib.put = function (data, callback) {   
+lib.put = function (data, callback) { 
   getCart(data, (resultCode, cartData) => {
     if (resultCode == 200) {
-      const input = _validator.validate("menuItemID, qty, price", data.payload);
+      const input = _validator.validateCartItem(data.payload);
       if (!input.hasErrors()) {
         // data gets added to the existing position in the cart or new position will be created
         const cartItem = cartData.cart.find((elem, idx, arr) => {
@@ -70,7 +70,7 @@ lib.put = function (data, callback) {
       }
     } else {
       // pass the error forward
-      callback(resultCode, data);
+      callback(resultCode, cartData);
     }
   });     
 };
@@ -120,6 +120,7 @@ function getCart(data, callback) {
 function updateCart(data, callback) {
   getCart(data, (resultCode, cartData) => {
     if (resultCode == 200) {
+      // TODO It doesn't work yet!!
       _validator.validateOrder(data.payload, (isValid, errors) => {
         _data.update('carts', cartData.eMail, data.payload, (error) => {
           if (!error) {

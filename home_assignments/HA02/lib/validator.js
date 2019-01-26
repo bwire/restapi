@@ -1,6 +1,11 @@
 //----------------------------------------------------------------------------------------------------
 // Functionality for perform necessary validation of input fields
 //----------------------------------------------------------------------------------------------------
+'use strict';
+
+// dependencies
+const _data = require("./data");
+const _menu = require("./menu");
 
 const lib = {};
 
@@ -15,7 +20,6 @@ lib.acceptableMethods = ['get', 'post', 'put', 'delete'];
 // have an 'errors' array, describing each error occured during validation process
 // If 'skipEmpty' argument provided, then no check performed. 
 lib.validate = function(fieldsString, container) {
-
   const fields = fieldsString.split(', ');
   // container for the result of validation
   const inputData = {};
@@ -38,6 +42,8 @@ lib.validate = function(fieldsString, container) {
             // If validation function doesn't exist - report error
             addError(inputData, "No validation procedure found to check '" + field + "' field");
           }
+        } else {
+          addError(inputData, 'Missing expected input data - ' + field);  
         }
       });
     } else {
@@ -48,6 +54,43 @@ lib.validate = function(fieldsString, container) {
   }
 
   return inputData;
+};
+
+// verify if the given token id is currently valid for the given user
+lib.verifyToken = function(headers, eMail, callback) { 
+  lib.validateToken(headers, (tokenData) => {
+    if (tokenData && tokenData.eMail === eMail) 
+      callback(true);
+    else
+      callback(false); 
+  }); 
+};
+
+// verify if the given token id is currently valid
+lib.validateToken = function(headers, callback) { 
+  // get the token from the headers
+  const id = typeof(headers.token) == 'string' ? headers.token : false;
+  if (id != false) { 
+    _data.read('tokens', id, (error, tokenData) => {
+      if (!error && tokenData) {
+        // Check that the token is for the current user and it is not expired
+        if (tokenData.expires > Date.now()) {
+          callback(tokenData);
+        } else {
+          callback(false);
+        }
+      } else {
+        callback(false);
+      };
+    });
+  } else {
+    callback(false);
+  } 
+};
+
+// order data validating
+lib.validateOrderItem = function(orderItems, callback) {
+  
 };
 
 
@@ -70,11 +113,20 @@ function getValidationFunctionData(container, field) {
   } else if (field == 'id') {
     fnData.func = validateString;
     fnData.params = [field, container[field], 20];
+  } else if (field == 'menuItemID' || field == 'qty') {
+    fnData.func = validateNumber;
+    fnData.params = [field, container[field], false];
+  } else if (field == 'price') {
+    fnData.func = validateNumber;
+    fnData.params = [field, container[field], true];
   } else if (field == 'firstName' || field == 'lastName' || field == 'address') {
     fnData.func = validateString;
     fnData.params = [field, container[field]];
   } else if (field == 'eMail') {
     fnData.func = validateEMail;
+    fnData.params = [field, container[field]];
+  } else if (field == 'extend') {
+    fnData.func = validateFlag;
     fnData.params = [field, container[field]];
   }
   return fnData;
@@ -116,6 +168,40 @@ function validateString(field, value, len, lbound, rbound) {
     this[field] = value;
   }
 }
+
+// Validate boolean field (with comparison to the expected value)
+function validateFlag(field, value, price) {
+  var noErrors = true;
+  if (typeof(value) == 'boolean') { 
+      this[field] = value;
+  } else {
+    addError(this, "Invalid data type for the field '" + field + "' provided");
+    noErrors = false; 
+  };
+}
+
+// Validate boolean field (with comparison to the expected value)
+function validateNumber(field, value, isPrice) {
+  var noErrors = true;
+  if ((typeof(value) == 'number') && ((isPrice && value.toString().match(/^\d+(\.\d{1,2})?$/)) || !isPrice)) {
+    this[field] = value;
+  } else {
+    addError(this, "Invalid data type for the field '" + field + "' provided");
+    noErrors = false; 
+  };
+}
+
+// Validate boolean field (with comparison to the expected value)
+function validateFlag(field, value) {
+  var noErrors = true;
+  if (typeof(value) == 'boolean') {
+    this[field] = value;
+  } else {
+    addError(this, "Invalid data type for the field '" + field + "' provided");
+    noErrors = false; 
+  };
+}
+
 
 // Validate the e-mail string
 // (Borrowed from here: https://flaviocopes.com/how-to-validate-email-address-javascript/)

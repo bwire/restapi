@@ -1,6 +1,7 @@
 /*
  *  Library for storing and editing data
  */
+'use strict'
 
 // dependencies
 const fs = require("fs");
@@ -22,22 +23,24 @@ function fileName(dir, file) {
 }
 
 // write to the file and close it
-lib.write = (fileDescriptor, stringData, callback) => fs.writeFile(fileDescriptor, stringData, (error) => {
-  if (!error) {
-    fs.close(fileDescriptor, (error) => {
-      if (error) {
-        callback('Error closing file!');
-      } else {
-        callback(false);
-      }
-    });
-  } else {
-    callback('Error writing to a new file!');
-  }
-});
+lib.write = function(fileDescriptor, stringData, callback) {
+  fs.writeFile(fileDescriptor, stringData, (error) => {
+    if (!error) {
+      fs.close(fileDescriptor, (error) => {
+        if (error) {
+          callback('Error closing file!');
+        } else {
+          callback(false);
+        }
+      });
+    } else {
+      callback('Error writing to a new file!');
+    }
+  });
+};
 
 // write data to a file
-lib.create = (dir, file, data, callback) => {
+lib.create = function(dir, file, data, callback) {
   // open the file for writing
   fs.open(fileName(dir, file), 'wx', (error, fileDescriptor) => {
     if (!error && fileDescriptor) {
@@ -52,7 +55,7 @@ lib.create = (dir, file, data, callback) => {
 };
 
 // read data from a file
-lib.read = (dir, file, callback) => {
+lib.read = function(dir, file, callback) {
   fs.readFile(fileName(dir, file), 'utf8', (error, data) => {
     if (!error && data) {
       const parsedData = helpers.parseJSONToObject(data);
@@ -68,7 +71,7 @@ lib.read = (dir, file, callback) => {
 };
 
 // update data in the existing file
-lib.update = (dir, file, data, callback) => {
+lib.update = function(dir, file, data, callback) {
   // open the file for writing
   fs.open(fileName(dir, file), 'r+', (error, fileDescriptor) => {
     if (!error && fileDescriptor) {
@@ -90,7 +93,7 @@ lib.update = (dir, file, data, callback) => {
 };
 
 // delete a file
-lib.delete = (dir, file, callback) => {
+lib.delete = function(dir, file, callback) {
   fs.unlink(fileName(dir, file), (error) => {
     if (!error) {
       callback(false);

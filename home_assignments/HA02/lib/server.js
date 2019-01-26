@@ -1,6 +1,7 @@
 //----------------------------------------------------------------------------------------------------------------
 // Server related stuff
 //----------------------------------------------------------------------------------------------------------------
+'use strict'
 
 const http = require("http");
 const https = require("https");
@@ -23,7 +24,6 @@ const httpServer = http.createServer((req, res) => {
   unifiedServer(req, res);
 });
 
-
 // start https server
 const httpsServerOptions = {
   'key': fs.readFileSync(path.join(__dirname, '/../https/key.pm')),
@@ -38,9 +38,12 @@ const httpsServer = https.createServer(httpsServerOptions, (req, res) => {
 const router = {
   'ping': handlers.ping,
   'users': handlers.users,
-  "tokens": handlers.tokens
+  'login': handlers.login,
+  'logout': handlers.logout,
+  'tokens': handlers.tokens,
+  'menu': handlers.menu,
+  'cart': handlers.cart
 };
-
 
 const unifiedServer = function(req, res) {
   // get url and parse it
@@ -72,7 +75,7 @@ const unifiedServer = function(req, res) {
     buffer += decoder.end();
     
     // choose the handler request should go to
-    const choosenHandler = typeof (router[trimmedPath]) !== undefined ?
+    const choosenHandler = router[trimmedPath] != undefined ?
       router[trimmedPath] : handlers.notFoundHandler;
 
     // construct the data to be send to the handler

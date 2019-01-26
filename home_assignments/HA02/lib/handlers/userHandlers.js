@@ -1,6 +1,7 @@
 //----------------------------------------------------------------------------------------------------
 // Request handlers for mantaining users
 //----------------------------------------------------------------------------------------------------
+'use strict';
 
 // dependencies
 const _validator = require("../validator");
@@ -20,7 +21,7 @@ function users(data, callback) {
 // USERS - POST
 // Requested data: password, firstName, lastName, eMail, address
 // Optional data: none
-lib.post = (data, callback) => {
+lib.post = function (data, callback) {
   // validtate necessary payload fields
   const input = _validator.validate("password, firstName, lastName, eMail, address", data.payload);
 
@@ -76,20 +77,26 @@ lib.post = (data, callback) => {
 // USERS - GET
 // Requested data: eMail
 // Optional data: none
-lib.get = (data, callback) => {
+lib.get = function (data, callback) {
   // validate eMail address
   var input = _validator.validate("eMail", data.queryStringObject);
-
   if (input.eMail) {
-    _data.read('users', input.eMail, (error, userData) => {
-      if (!error && userData) {
-        // remove hashed password form the user object before return it to the requester
-        delete userData.password;
-        callback(200, userData);
-      } else {
-        callback(404, {
-          'Error': 'No user with the specified e-mail found!'
+    // verify that the given token corresponds to the eMail
+    _validator.verifyToken(data.headers, input.eMail, (tokenIsValid) => {
+      if (tokenIsValid) {
+        _data.read('users', input.eMail, (error, userData) => {
+          if (!error && userData) {
+            // remove hashed password form the user object before return it to the requester
+            delete userData.password;
+            callback(200, userData);
+          } else {
+            callback(404, {
+              'Error': 'No user with the specified e-mail found!'
+            });
+          }
         });
+      } else {
+        callback(403, { "Error": "Missing required token in the header, or the token is not valid"});
       }
     });
   } else {
@@ -106,43 +113,50 @@ lib.put = function(data, callback) {
   // validtate fields
   const input = _validator.validate("eMail, firstName, lastName, address, password", data.payload);
   if (!input.hasErrors()) {
-    // error if nothing is sent to update
-    if (input.firstName || input.lastName || input.address || input.password) {
-      // Look up the user
-      _data.read('users', input.eMail, (error, userData) => {
-        if (!error && userData) {
-          // update necessary fields
-          if (input.firstName)
-            userData.firstName = input.firstName;
-          if (input.lastName)
-            userData.lastName = input.lastName;
-          if (input.address)
-            userData.address = input.address;
-          if (input.password)
-            userData.password = _helpers.hash(input.password);
+    // verify that the given token corresponds to the eMail
+    _validator.verifyToken(data.headers, input.eMail, (tokenIsValid) => {
+      if (tokenIsValid) {
+        // error if nothing is sent to update
+        if (input.firstName || input.lastName || input.address || input.password) {
+          // Look up the user
+          _data.read('users', input.eMail, (error, userData) => {
+            if (!error && userData) {
+              // update necessary fields
+              if (input.firstName)
+                userData.firstName = input.firstName;
+              if (input.lastName)
+                userData.lastName = input.lastName;
+              if (input.address)
+                userData.address = input.address;
+              if (input.password)
+                userData.password = _helpers.hash(input.password);
 
-          // store updated data
-          _data.update('users', input.eMail, userData, (error) => {
-            if (!error) {
-              delete userData.password;
-              callback(200, userData);
+              // store updated data
+              _data.update('users', input.eMail, userData, (error) => {
+                if (!error) {
+                  delete userData.password;
+                  callback(200, userData);
+                } else {
+                  callback(500, {
+                    'Error': 'Could not update the user'
+                  });
+                }
+              });
             } else {
-              callback(500, {
-                'Error': 'Could not update the user'
+              callback(400, {
+                'Error': 'The specified user does not exist'
               });
             }
           });
         } else {
           callback(400, {
-            'Error': 'The specified user does not exist'
+            'Error': 'Missing fields to update'
           });
         }
-      });
-    } else {
-      callback(400, {
-        'Error': 'Missing fields to update'
-      });
-    }
+      } else {
+        callback(403, { "Error": "Missing required token in the header, or the token is not valid"});  
+      }
+    });
   } else {
     callback(400, {
       "Errors": input._errors
@@ -157,30 +171,35 @@ lib.delete = function(data, callback) {
   // validatate eMail address
   const input = _validator.validate("eMail", data.queryStringObject);
   if (input.eMail) {
-    _data.read('users', input.eMail, (error, userData) => {
-      if (!error && userData) {
-        _data.delete('users', input.eMail, (error) => {
-          if (!error) {
-            callback(200);
+    // verify that the given token corresponds to the eMail
+    _validator.verifyToken(data.headers, input.eMail, (tokenIsValid) => {
+      if (tokenIsValid) {
+        _data.read('users', input.eMail, (error, userData) => {
+          if (!error && userData) {
+            _data.delete('users', input.eMail, (error) => {
+              if (!error) {
+                callback(200);
+              } else {
+                callback(500, {
+                  'Error': 'Could not delete the user!'
+                });
+              }
+            });
           } else {
-            callback(500, {
-              'Error': 'Could not delete the user!'
+            callback(404, {
+              'Error': 'No user with the specified e-mail found!'
             });
           }
         });
       } else {
-        callback(404, {
-          'Error': 'No user with the specified e-mail found!'
-        });
+        callback(403, { "Error": "Missing required token in the header, or the token is not valid"});   
       }
     });
-
   } else {
     callback(400, {
       "Errors": input._errors
     });
   }
 };
-
 
 module.exports = users;

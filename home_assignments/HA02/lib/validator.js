@@ -89,15 +89,23 @@ lib.validateToken = function(headers, callback) {
 };
 
 // order data validating
-lib.validateCartItem = function(item, idx) {
+lib.validateCartItem = function(item) {
   let input = lib.validate("menuItemID, qty, price", item);
-  if (!input.hasErrors) {
+  if (!input.hasErrors()) {
     // name doesn't need to be checked. Just add it to the result
     input.name = item.name;
   };
   return input;
 };
 
+lib.valdateCartItems = function(items) {
+  const errors = items.map(lib.validateCartItem)
+    .filter(item => item.hasErrors())
+    .map(item => item._errors);
+  return errors.length == 0 ? 
+    { 'hasErrors': () => false, 'data': items } : 
+    { 'hasErrors': () => true, 'data': errors } ;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Service functions
@@ -210,7 +218,7 @@ function validateEMail(field, value) {
 function validateItemID(field, value) {
   if (typeof(value) == 'number') {
     let fCheck = (elem, idx, arr) => {
-      if (elem.menuItemID == value) 
+      if (elem.id == value) 
         return elem;
     };
 

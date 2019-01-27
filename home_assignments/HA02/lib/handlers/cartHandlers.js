@@ -120,16 +120,23 @@ function getCart(data, callback) {
 function updateCart(data, callback) {
   getCart(data, (resultCode, cartData) => {
     if (resultCode == 200) {
-      // TODO It doesn't work yet!!
-      _validator.validateOrder(data.payload, (isValid, errors) => {
-        _data.update('carts', cartData.eMail, data.payload, (error) => {
-          if (!error) {
-            callback(200, data.payload);
-          } else {
-            callback(500, { 'Error': 'Could not update the shopping cart data'});
-          }
-        });
-      });
+      const items = data.payload;
+      if (typeof(items) == 'object' && items instanceof Array) {
+        const result = _validator.valdateCartItems(data.payload);
+        if (!result.hasErrors()) {
+          _data.update('carts', cartData.eMail, result.data, (error) => {
+            if (!error) {
+              callback(200, result.data);
+            } else {
+              callback(500, { 'Error': 'Could not update the shopping cart data'});
+            }
+          });
+        } else {
+          callback(403, result.data);    
+        };
+      } else {
+        callback(403, "Invalid input data format");
+      }
     } else {
       // pass the error forward
       callback(resultCode, data);

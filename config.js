@@ -7,7 +7,13 @@ environments.staging = {
   "httpsPort": 3001,
   "envName": 'staging',
   "hashingSecret": 'ThisIsASecret',
-  "maxChecks": 5
+  "maxChecks": 5,
+  "templateGlobals": {
+    "appName": "Uptime checker",
+    "comapnyName": "Not a real company Inc.",
+    "yearCreated": 2018,
+    "baseUrl": "http://localhost:3000"
+  }
 };
 
 // production environment
@@ -16,7 +22,13 @@ environments.production = {
   "httpsPort": 5001,
   "envName": 'production',
   "hashingSecret": 'ThisIsASecret',
-  "maxChecks": 5
+  "maxChecks": 5,
+  "templateGlobals": {
+    "appName": "Uptime checker",
+    "comapnyName": "Not a real company Inc.",
+    "yearCreated": 2018,
+    "baseUrl": "http://localhost:5000"
+  }
 };
 
 var currentEnv = typeof(process.env.Node_ENV) === 'string' ?

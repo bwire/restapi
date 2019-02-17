@@ -126,6 +126,9 @@ function getValidationFunctionData(container, field) {
   } else if (field == 'id') {
     fnData.func = validateString;
     fnData.params = [field, container[field], 20];
+  } else if (field == 'stripeToken') {
+    fnData.func = validateString;
+    fnData.params = [field, container[field], , 7];
   } else if (field == 'menuItemID') {
     fnData.func = validateItemID;
     fnData.params = [field, container[field]];

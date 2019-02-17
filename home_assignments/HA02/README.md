@@ -1,6 +1,8 @@
 # Pirple NodeJS masterclass homework assignment 02.
 
-The Assignment (Scenario):
+## Introduction
+
+### The Assignment (Scenario)
 
 You are building the API for a pizza-delivery company. Don't worry about a frontend, just build the API. Here's the spec from your project manager: 
 

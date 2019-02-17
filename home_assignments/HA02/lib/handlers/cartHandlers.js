@@ -93,7 +93,7 @@ function getCart(data, callback) {
   // check token for validity
   _validator.validateToken(data.headers, (tokenData) => {
     if (tokenData) {
-      // find the cart file by user e0mail
+      // find the cart file by user email
       _data.read('carts', tokenData.eMail, (error, cartData) => {
         // no cart found so create one
         if (error) {

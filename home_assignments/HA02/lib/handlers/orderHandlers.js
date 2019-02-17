@@ -58,7 +58,7 @@ lib.post = function(data, callback) {
 
 // service
 function payOrder(orderData, callback) {
-  console.log(orderData);
+  console.log(orderDataq);
   callback(false);
 }
 

@@ -6,6 +6,7 @@
 // dependencies
 const _validator = require("../validator");
 const _data = require("../data");
+const _rCodes = require("../responseCodes");
 
 const lib = {};
 
@@ -31,7 +32,7 @@ lib.post = function (data, callback) {
 // Optional data: none
 lib.get = function (data, callback) { 
   getCart(data, (resultCode, data) => {
-    if (resultCode == 200) {
+    if (resultCode == _rCodes.OK) {
       callback(resultCode, data.cart);
     } else {
       callback(resultCode, data);
@@ -44,7 +45,7 @@ lib.get = function (data, callback) {
 // Optional data: none
 lib.put = function (data, callback) { 
   getCart(data, (resultCode, cartData) => {
-    if (resultCode == 200) {
+    if (resultCode == _rcodes.OK) {
       const input = _validator.validateCartItem(data.payload);
       if (!input.hasErrors()) {
         // data gets added to the existing position in the cart or new position will be created
@@ -60,13 +61,13 @@ lib.put = function (data, callback) {
 
         _data.update('carts', cartData.eMail, cartData.cart, (error) => {
           if (!error) {
-            callback(200, cartData.cart);
+            callback(_rCodes.OK, cartData.cart);
           } else {
-            callback(500, { 'Error': 'Could not update the shopping cart data'});
+            callback(_rCodes.serverError, { 'Error': 'Could not update the shopping cart data'});
           }
         });
       } else {
-        callback(400, {"Errors": input._errors});
+        callback(_rCodes.badRequest, {"Errors": input._errors});
       }
     } else {
       // pass the error forward
@@ -100,17 +101,17 @@ function getCart(data, callback) {
           emptyCart = [];
           _data.create('carts', tokenData.eMail, emptyCart, (error) => {
             if (error) {
-              callback(500, { 'Error': 'Could not save the shopping cart' });
+              callback(_rCodes.serverError, { 'Error': 'Could not save the shopping cart' });
             } else {
-              callback(200, { eMail: tokenData.eMail, cart: emptyCart });
+              callback(_rCodes.OK, { eMail: tokenData.eMail, cart: emptyCart });
             }
           });
         } else {
-          callback(200, { eMail: tokenData.eMail, cart: cartData });
+          callback(_rCodes.OK, { eMail: tokenData.eMail, cart: cartData });
         }
       });
     } else {
-      callback(403, { "Error": "Missing required token in the header, or the token is not valid"});
+      callback(_rodes.forbidden, { "Error": "Missing required token in the header, or the token is not valid"});
     }
   });
 }
@@ -119,23 +120,23 @@ function getCart(data, callback) {
 // If the payload is empty then just clear the cart
 function updateCart(data, callback) {
   getCart(data, (resultCode, cartData) => {
-    if (resultCode == 200) {
+    if (resultCode == _rCodes.OK) {
       const items = data.payload;
       if (typeof(items) == 'object' && items instanceof Array) {
-        const result = _validator.valdateCartItems(data.payload);
+        const result = _validator.valdateCartItems(items);
         if (!result.hasErrors()) {
           _data.update('carts', cartData.eMail, result.data, (error) => {
             if (!error) {
-              callback(200, result.data);
+              callback(_rCodes.OK, result.data);
             } else {
-              callback(500, { 'Error': 'Could not update the shopping cart data'});
+              callback(_rCodes.serverError, { 'Error': 'Could not update the shopping cart data'});
             }
           });
         } else {
-          callback(403, result.data);    
+          callback(_rCodes.badRequest, "Invalid input data format");   
         };
       } else {
-        callback(403, "Invalid input data format");
+        callback(_rCodes.badRequest, "Invalid input data format");
       }
     } else {
       // pass the error forward

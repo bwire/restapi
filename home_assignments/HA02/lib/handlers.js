@@ -8,6 +8,7 @@ const _userHandlers = require("./handlers/userHandlers");
 const _tokenHadlers = require("./handlers/tokenHandlers");
 const _menuHadlers = require("./handlers/menuHandlers");
 const _cartHadlers = require("./handlers/cartHandlers");
+const _orderHadlers = require("./handlers/orderHandlers");
 
 const lib = {};
 
@@ -16,6 +17,7 @@ lib.users = _userHandlers;
 lib.tokens = _tokenHadlers;
 lib.menu = _menuHadlers;
 lib.cart = _cartHadlers;
+lib.orders = _orderHadlers;
 
 lib.login = function(data, callback) {
   if (data.method == 'post') {

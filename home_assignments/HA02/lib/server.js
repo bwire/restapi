@@ -42,7 +42,8 @@ const router = {
   'logout': handlers.logout,
   'tokens': handlers.tokens,
   'menu': handlers.menu,
-  'cart': handlers.cart
+  'cart': handlers.cart,
+  'orders': handlers.orders
 };
 
 const unifiedServer = function(req, res) {

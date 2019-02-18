@@ -6,6 +6,10 @@
 // dependencies
 const _data = require("../data");
 const _validator = require("../validator");
+const _config = require("../../config");
+const _https = require("https");
+const _rCodes = require("../responseCodes");
+const StringDecoder = require('string_decoder').StringDecoder;
 
 // main container
 const lib = {};
@@ -30,17 +34,23 @@ lib.post = function(data, callback) {
       // find the cart file by user email
       _data.read('carts', tokenData.eMail, (error, cartData) => {
         if (!error && cartData && cartData.length > 0) {
+
+          // TODO Is all these data really needed?
           let orderData = {
+            token: input.stripeToken,
             date: Date.now(),
             eMail: tokenData.eMail,
             items: cartData,
             sum: cartData.reduce((acc, val) => acc + val.qty * val.price, 0)
           };
+
+          // try to pay 
           payOrder(orderData, (error, paymentData) => {
             if (!error && paymentData) {
+              console.log(paymentData);
               callback(200);
             } else {
-              callback(300);
+              callback(_rCodes.serverError);
             }
           });
         } else {
@@ -58,8 +68,52 @@ lib.post = function(data, callback) {
 
 // service
 function payOrder(orderData, callback) {
-  console.log(orderDataq);
-  callback(false);
+
+  let payload = {
+    'amount': orderData.sum,
+    'currency': 'usd',
+    'source': 'sk_test_4eC39HqLyjWDarjtT1zdp7dc',
+    'description': `Order # ${orderData.date} for ${orderData.eMail}`
+  };
+  const payloadString = JSON.stringify(payload);
+
+  let options = {
+    'protocol': 'https:',
+    'host': 'api.stripe.com',
+    'path': "v1/charges",
+    'method': 'POST',
+    'headers': {
+      'Content-Type': 'application/json',     
+      'Autorization': 'Bearer MY_TEST_KEY' 
+    } 
+  };
+
+  let req = _https.request(options, (resp) => {
+    if (resp.statusCode = _rCodes.OK) {
+
+      const decoder = new StringDecoder('utf-8');
+      var buffer = '';
+
+      resp.on('data', (data) => {
+        buffer += decoder.write(data);
+      });
+
+      resp.on('end', () => {
+        buffer += decoder.end();
+        callback(false, buffer);
+      });
+
+    } else {
+      callback(true);
+    }
+  });
+
+  req.on('error', function (e) {
+    callback(true);
+  });
+
+  req.write(payloadString);
+  req.end();
 }
 
 module.exports = orders;

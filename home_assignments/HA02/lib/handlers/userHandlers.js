@@ -51,26 +51,18 @@ lib.post = function (data, callback) {
               callback(200, userObject);
             } else {
               console.log(error);
-              callback(500, {
-                'Error': 'Could not create a new user'
-              });
+              callback(_rCodes.serverError, { 'Error': 'Could not create a new user'});
             }
           });
         } else {
-          callback(500, {
-            'Error': 'Could not hash the password'
-          });
+          callback(_rCodes.serverError, { 'Error': 'Could not hash the password' });
         }
       } else {
-        callback(500, {
-          'Error': 'A user with the specified login already exists'
-        });
+        callback(_rCodes.forbidden, { 'Error': 'A user with the specified login already exists' });
       }
     });
   } else {
-    callback(400, {
-      "Errors": input._errors
-    });
+    callback(_rCodes.badRequest, { "Errors": input._errors });
   }
 };
 

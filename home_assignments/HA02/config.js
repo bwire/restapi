@@ -6,7 +6,8 @@ environments.staging = {
   httpPort: 3000,
   httpsPort: 3001,
   envName: 'staging',
-  hashingSecret: 'ThisIsASecret'
+  hashingSecret: 'ThisIsASecret',
+  stripeKey: 'API_TEST_KEY' 
 };
 
 // Staging (default) environment
@@ -14,7 +15,8 @@ environments.production = {
   httpPort: 5000,
   httpsPort: 5001,
   envName: 'production',
-  hashingSecret: 'ThisIsASecret'
+  hashingSecret: 'ThisIsASecret',
+  stripeKey: 'API_TEST_KEY'
 };
 
 const currentEnv = typeof (process.env.NODE_ENV) === 'string' ?

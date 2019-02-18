@@ -6,6 +6,7 @@
 // dependencies
 const _menu = require("../menu");
 const _validator = require("../validator");
+const _rCodes = require("../responseCodes");
 
 // main container
 const lib = {};
@@ -25,9 +26,9 @@ lib.get = (data, callback) => {
   // verify that the given token corresponds to the eMail
   _validator.validateToken(data.headers, (tokenIsValid) => {
     if (tokenIsValid) 
-      callback(200, _menu);
+      callback(_rCodes.OK, _menu);
     else 
-      callback(403, { "Error": "Missing required token in the header, or the token is not valid"});
+      callback(_rCode.forbidden, { "Error": "Missing required token in the header, or the token is not valid"});
   });
 };
 

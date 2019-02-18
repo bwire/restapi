@@ -22,3 +22,12 @@ This is an open-ended assignment.
 You may take any direction you'd like to go with it, as long as your project includes the requirements. 
 It can include anything else you wish as well. 
 And please: Don't forget to document how a client should interact with the API you create!
+
+
+### API definition
+
+---
+
+### Users
+
+---

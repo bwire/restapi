@@ -24,10 +24,23 @@ It can include anything else you wish as well.
 And please: Don't forget to document how a client should interact with the API you create!
 
 
-### API definition
+## API definition
 
----
+### Users 
 
-### Users
+### Creating user:
+- Path: /users
+- Method: POST
 
----
+Request body:
+```javascript
+{
+  "password": "*****",
+  "firstName": "userFirstName",
+  "lastName": "userLastName",
+  "email": "user@host.com",
+  "address": "User Home Address"  
+}
+```
+Response: newly created object without the Password information.
+

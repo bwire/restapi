@@ -70,6 +70,16 @@ lib.read = function(dir, file, callback) {
   });
 };
 
+// read data from a file
+lib.readAsync = async (dir, file) => {
+  try {
+    const data = await fs.readFile(fileName(dir, file), 'utf8');
+    return helpers.parseJSONToObject(data);
+  } catch (e) {
+    return e;
+  }
+};
+
 // update data in the existing file
 lib.update = function(dir, file, data, callback) {
   // open the file for writing

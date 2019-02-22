@@ -4,9 +4,12 @@
 'use strict'
 
 // dependencies
+
+// TODO get rid of this dependency
 const fs = require("fs");
 const path = require("path");
 
+const _p = require('./promisifier');
 const helpers = require('./helpers');
 
 // container for the module to be exported
@@ -70,14 +73,16 @@ lib.read = function(dir, file, callback) {
   });
 };
 
-// read data from a file
-lib.readAsync = async (dir, file) => {
+// Read data from a file
+// errorMessage parameter defines the message used in case of error
+lib.readAsync = async (dir, file, errorMessage) => { 
   try {
-    const data = await fs.readFile(fileName(dir, file), 'utf8');
+    const data = await _p.readFile(fileName(dir, file), 'utf8');
     return helpers.parseJSONToObject(data);
   } catch (e) {
-    return e;
-  }
+    // if no custom messahe specified - just rethrow the exception
+    throw errorMessage != undefined ? { 'Error': errorMessage } : e;
+  }   
 };
 
 // update data in the existing file

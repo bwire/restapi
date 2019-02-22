@@ -32,31 +32,30 @@ lib.post = function(data, callback) {
     _validator.validateToken(data.headers, (tokenData) => {
     if (tokenData) {
       // find the cart file by user email
-      _data.read('carts', tokenData.eMail, (error, cartData) => {
-        if (!error && cartData && cartData.length > 0) {
+      _data.read('carts', tokenData.eMail)
+        .then(cartData => {
+          if (cartData && cartData.length > 0) {
+            // TODO Is all these data really needed?
+            let orderData = {
+              token: input.stripeToken,
+              date: Date.now(),
+              eMail: tokenData.eMail,
+              items: cartData,
+              sum: cartData.reduce((acc, val) => acc + val.qty * val.price, 0)
+            };
 
-          // TODO Is all these data really needed?
-          let orderData = {
-            token: input.stripeToken,
-            date: Date.now(),
-            eMail: tokenData.eMail,
-            items: cartData,
-            sum: cartData.reduce((acc, val) => acc + val.qty * val.price, 0)
-          };
-
-          // try to pay 
-          payOrder(orderData, (error, paymentData) => {
-            if (!error && paymentData) {
-              console.log(paymentData);
-              callback(200);
-            } else {
-              callback(_rCodes.serverError);
-            }
-          });
-        } else {
-          callback(403, { "Error": "Your cart is empty! Nothing to order!"});   
-        }
-      });
+            // try to pay 
+            payOrder(orderData, (error, paymentData) => {
+              const res = !error && paymentData ? 200 : _rCodes.serverError;
+              callback(res);
+            });
+          } else {
+            return Promise.reject('');
+          }
+        })
+        .catch(e => {
+          callback(403, { "Error": "Your cart is empty! Nothing to order!"}); 
+        });
     } else {
       callback(403, { "Error": "Missing required token in the header, or the token is not valid"});
     } 

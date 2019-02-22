@@ -95,9 +95,12 @@ function getCart(data, callback) {
   _validator.validateToken(data.headers, (tokenData) => {
     if (tokenData) {
       // find the cart file by user email
-      _data.read('carts', tokenData.eMail, (error, cartData) => {
-        // no cart found so create one
-        if (error) {
+      _data.readAsync('carts', tokenData.eMail)
+        .then(cartData => {
+          callback(_rCodes.OK, { eMail: tokenData.eMail, cart: cartData });  
+        })
+        .catch(__ => {
+          // no cart found so create one
           emptyCart = [];
           _data.create('carts', tokenData.eMail, emptyCart, (error) => {
             if (error) {
@@ -106,12 +109,9 @@ function getCart(data, callback) {
               callback(_rCodes.OK, { eMail: tokenData.eMail, cart: emptyCart });
             }
           });
-        } else {
-          callback(_rCodes.OK, { eMail: tokenData.eMail, cart: cartData });
-        }
-      });
+        });
     } else {
-      callback(_rodes.forbidden, { "Error": "Missing required token in the header, or the token is not valid"});
+      callback(_rCodes.forbidden, { "Error": "Missing required token in the header, or the token is not valid"});
     }
   });
 }

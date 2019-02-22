@@ -1,20 +1,20 @@
-//----------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------
 // Shopping cart handlers
-//----------------------------------------------------------------------------------------------------------------
-'use strict';
+// ----------------------------------------------------------------------------------------------------------------
+'use strict'
 
 // dependencies
-const _validator = require("../validator");
-const _data = require("../data");
-const _rCodes = require("../responseCodes");
+const _validator = require('../validator')
+const _data = require('../data')
+const _rCodes = require('../responseCodes')
 
-const lib = {};
+const lib = {}
 
 // main dispatcher function
-function cart(data, callback) {
+function cart (data, callback) {
   // there is no support of the POST request
-  if (_validator.acceptableMethods.indexOf(data.method) != -1) {
-    lib[data.method](data, callback);
+  if (_validator.acceptableMethods.indexOf(data.method) !== -1) {
+    lib[data.method](data, callback)
   }
 }
 
@@ -22,128 +22,127 @@ function cart(data, callback) {
 // Replace all shopping cart data with the new
 // Requested data: array of obects {id: number, qty: number, price: number}
 // Optional data: none
-lib.post = function (data, callback) {   
-  updateCart(data, callback);
-};
+lib.post = function (data, callback) {
+  updateCart(data, callback)
+}
 
 // Cart - GET
 // Return all shopping cart items
 // Requested data: none
 // Optional data: none
-lib.get = function (data, callback) { 
+lib.get = function (data, callback) {
   getCart(data, (resultCode, data) => {
-    if (resultCode == _rCodes.OK) {
-      callback(resultCode, data.cart);
+    if (resultCode === _rCodes.OK) {
+      callback(resultCode, data.cart)
     } else {
-      callback(resultCode, data);
+      callback(resultCode, data)
     }
-  });
-};
+  })
+}
 
 // Cart - PUT
 // Requested data: none
 // Optional data: none
-lib.put = function (data, callback) { 
+lib.put = function (data, callback) {
   getCart(data, (resultCode, cartData) => {
-    if (resultCode == _rcodes.OK) {
-      const input = _validator.validateCartItem(data.payload);
+    if (resultCode === _rCodes.OK) {
+      const input = _validator.validateCartItem(data.payload)
       if (!input.hasErrors()) {
         // data gets added to the existing position in the cart or new position will be created
         const cartItem = cartData.cart.find((elem, idx, arr) => {
-          if (elem.menuItemID == input.menuItemID) return elem;
-        });
+          if (elem.menuItemID === input.menuItemID) return elem
+        })
         if (cartItem !== undefined) {
           // there is already the item in the cart
-          cartItem.qty += input.qty;
+          cartItem.qty += input.qty
         } else {
-          cartData.cart.push(data.payload);
+          cartData.cart.push(data.payload)
         }
 
         _data.update('carts', cartData.eMail, cartData.cart, (error) => {
           if (!error) {
-            callback(_rCodes.OK, cartData.cart);
+            callback(_rCodes.OK, cartData.cart)
           } else {
-            callback(_rCodes.serverError, { 'Error': 'Could not update the shopping cart data'});
+            callback(_rCodes.serverError, {'Error': 'Could not update the shopping cart data'})
           }
-        });
+        })
       } else {
-        callback(_rCodes.badRequest, {"Errors": input._errors});
+        callback(_rCodes.badRequest, {'Errors': input._errors})
       }
     } else {
       // pass the error forward
-      callback(resultCode, cartData);
+      callback(resultCode, cartData)
     }
-  });     
-};
+  })
+}
 
 // Cart - DELETE
 // Empty the shopping cart
 // Requested data: array of obects {id: number, qty: number, price: number}
 // Optional data: none
-lib.delete = function (data, callback) { 
-  // just in case 
-  data.payload = []; 
-  updateCart(data, callback);
-};
-
+lib.delete = function (data, callback) {
+  // just in case
+  data.payload = []
+  updateCart(data, callback)
+}
 
 // service functions
 
 // Create empty shopping cart for the user if it doesn't exist yet or get the existing one
-function getCart(data, callback) {
+function getCart (data, callback) {
   // check token for validity
   _validator.validateToken(data.headers, (tokenData) => {
     if (tokenData) {
       // find the cart file by user email
       _data.readAsync('carts', tokenData.eMail)
         .then(cartData => {
-          callback(_rCodes.OK, { eMail: tokenData.eMail, cart: cartData });  
+          callback(_rCodes.OK, { eMail: tokenData.eMail, cart: cartData })
         })
         .catch(__ => {
           // no cart found so create one
-          emptyCart = [];
+          const emptyCart = []
           _data.create('carts', tokenData.eMail, emptyCart, (error) => {
             if (error) {
-              callback(_rCodes.serverError, { 'Error': 'Could not save the shopping cart' });
+              callback(_rCodes.serverError, { 'Error': 'Could not save the shopping cart' })
             } else {
-              callback(_rCodes.OK, { eMail: tokenData.eMail, cart: emptyCart });
+              callback(_rCodes.OK, { eMail: tokenData.eMail, cart: emptyCart })
             }
-          });
-        });
+          })
+        })
     } else {
-      callback(_rCodes.forbidden, { "Error": "Missing required token in the header, or the token is not valid"});
+      callback(_rCodes.forbidden, {'Error': 'Missing required token in the header, or the token is not valid'})
     }
-  });
+  })
 }
 
 // Reqrite all cart data with the payload data.
 // If the payload is empty then just clear the cart
-function updateCart(data, callback) {
+function updateCart (data, callback) {
   getCart(data, (resultCode, cartData) => {
-    if (resultCode == _rCodes.OK) {
-      const items = data.payload;
-      if (typeof(items) == 'object' && items instanceof Array) {
-        const result = _validator.valdateCartItems(items);
+    if (resultCode === _rCodes.OK) {
+      const items = data.payload
+      if (typeof (items) === 'object' && items instanceof Array) {
+        const result = _validator.valdateCartItems(items)
         if (!result.hasErrors()) {
           _data.update('carts', cartData.eMail, result.data, (error) => {
             if (!error) {
-              callback(_rCodes.OK, result.data);
+              callback(_rCodes.OK, result.data)
             } else {
-              callback(_rCodes.serverError, { 'Error': 'Could not update the shopping cart data'});
+              callback(_rCodes.serverError, {'Error': 'Could not update the shopping cart data'})
             }
-          });
+          })
         } else {
-          callback(_rCodes.badRequest, "Invalid input data format");   
-        };
+          callback(_rCodes.badRequest, 'Invalid input data format')
+        }
       } else {
-        callback(_rCodes.badRequest, "Invalid input data format");
+        callback(_rCodes.badRequest, 'Invalid input data format')
       }
     } else {
       // pass the error forward
-      callback(resultCode, data);
+      callback(resultCode, data)
     }
-  });     
+  })
 }
 
-module.exports = cart;
+module.exports = cart
 

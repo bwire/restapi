@@ -6,117 +6,117 @@
 // dependencies
 
 // TODO get rid of this dependency
-const fs = require("fs");
-const path = require("path");
+const fs = require('fs')
+const path = require('path')
 
-const _p = require('./promisifier');
-const helpers = require('./helpers');
+const _p = require('./promisifier')
+const helpers = require('./helpers')
 
 // container for the module to be exported
-const lib = {};
+const lib = {}
 
 // base directory of the data folder
-function baseDir() {
-  return path.join(__dirname, '/../.data/');
+function baseDir () {
+  return path.join(__dirname, '/../.data/')
 }
 
 // compose file name according to parameters
-function fileName(dir, file) {
-  return baseDir() + dir + '/' + file + '.json';
+function fileName (dir, file) {
+  return baseDir() + dir + '/' + file + '.json'
 }
 
 // write to the file and close it
-lib.write = function(fileDescriptor, stringData, callback) {
+lib.write = function (fileDescriptor, stringData, callback) {
   fs.writeFile(fileDescriptor, stringData, (error) => {
     if (!error) {
       fs.close(fileDescriptor, (error) => {
         if (error) {
-          callback('Error closing file!');
+          callback('Error closing file!')
         } else {
-          callback(false);
+          callback(false)
         }
-      });
+      })
     } else {
-      callback('Error writing to a new file!');
+      callback('Error writing to a new file!')
     }
-  });
-};
+  })
+}
 
 // write data to a file
-lib.create = function(dir, file, data, callback) {
+lib.create = function (dir, file, data, callback) {
   // open the file for writing
   fs.open(fileName(dir, file), 'wx', (error, fileDescriptor) => {
     if (!error && fileDescriptor) {
       // convert data to a string
-      const stringData = JSON.stringify(data);
+      const stringData = JSON.stringify(data)
       // write to the file and close it
-      lib.write(fileDescriptor, stringData, callback);
+      lib.write(fileDescriptor, stringData, callback)
     } else {
-      callback("Couldn't create a new file. It may already exist!");
+      callback("Couldn't create a new file. It may already exist!")
     }
-  });
-};
+  })
+}
 
 // read data from a file
-lib.read = function(dir, file, callback) {
+lib.read = function (dir, file, callback) {
   fs.readFile(fileName(dir, file), 'utf8', (error, data) => {
     if (!error && data) {
-      const parsedData = helpers.parseJSONToObject(data);
+      const parsedData = helpers.parseJSONToObject(data)
       if (parsedData) {
-        callback(false, parsedData);
+        callback(false, parsedData)
       } else {
-        callback(error, data);
+        callback(error, data)
       }
     } else {
-      callback(error);
+      callback(error)
     };
-  });
-};
+  })
+}
 
 // Read data from a file
 // errorMessage parameter defines the message used in case of error
-lib.readAsync = async (dir, file, errorMessage) => { 
+lib.readAsync = async (dir, file, errorMessage) => {
   try {
-    const data = await _p.readFile(fileName(dir, file), 'utf8');
-    return helpers.parseJSONToObject(data);
+    const data = await _p.readFile(fileName(dir, file), 'utf8')
+    return helpers.parseJSONToObject(data)
   } catch (e) {
     // if no custom messahe specified - just rethrow the exception
-    throw errorMessage != undefined ? { 'Error': errorMessage } : e;
-  }   
-};
+    throw errorMessage !== undefined ? { 'Error': errorMessage } : e
+  }
+}
 
 // update data in the existing file
-lib.update = function(dir, file, data, callback) {
+lib.update = function (dir, file, data, callback) {
   // open the file for writing
   fs.open(fileName(dir, file), 'r+', (error, fileDescriptor) => {
     if (!error && fileDescriptor) {
       // convert data to a string
-      const stringData = JSON.stringify(data);
+      const stringData = JSON.stringify(data)
       // truncate data
       fs.truncate(fileDescriptor, (error) => {
         if (!error) {
           // write to the file and close it
-          lib.write(fileDescriptor, stringData, callback);
+          lib.write(fileDescriptor, stringData, callback)
         } else {
-          callback("Error truncating file");
+          callback('Error truncating file')
         }
-      });
+      })
     } else {
-      callback("Couldn't open the file for updating! It may not exist yet.");
+      callback("Couldn't open the file for updating! It may not exist yet.")
     }
-  });
-};
+  })
+}
 
 // delete a file
-lib.delete = function(dir, file, callback) {
+lib.delete = function (dir, file, callback) {
   fs.unlink(fileName(dir, file), (error) => {
     if (!error) {
-      callback(false);
+      callback(false)
     } else {
-      callback('Error deleting a file');
+      callback('Error deleting a file')
     }
-  });
-};
+  })
+}
 
 // export the module
-module.exports = lib;
+module.exports = lib

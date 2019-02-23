@@ -1,5 +1,7 @@
-// container for all the environments
-var environments = {};
+// ----------------------------------------------------------------------------------------------------------------
+// Container for all the environments
+// -
+var environments = {}
 
 // Staging (default) environment
 environments.staging = {
@@ -7,8 +9,8 @@ environments.staging = {
   httpsPort: 3001,
   envName: 'staging',
   hashingSecret: 'ThisIsASecret',
-  stripeKey: 'API_TEST_KEY' 
-};
+  stripeKey: 'API_TEST_KEY'
+}
 
 // Staging (default) environment
 environments.production = {
@@ -17,13 +19,13 @@ environments.production = {
   envName: 'production',
   hashingSecret: 'ThisIsASecret',
   stripeKey: 'API_TEST_KEY'
-};
+}
 
-const currentEnv = typeof (process.env.NODE_ENV) === 'string' ?
-  process.env.NODE_ENV.toLowerCase : '';
+const currentEnv = typeof (process.env.NODE_ENV) === 'string'
+  ? process.env.NODE_ENV.toLowerCase : ''
 
 // check for one of the defined environments (if not - set staging)
-const envToExport = typeof (environments[currentEnv]) === 'object' ?
-  environments[currentEnv] : environments.staging;
+const envToExport = typeof (environments[currentEnv]) === 'object'
+  ? environments[currentEnv] : environments.staging
 
-module.exports = envToExport;
+module.exports = envToExport

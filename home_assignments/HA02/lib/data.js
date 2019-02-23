@@ -57,31 +57,15 @@ lib.create = function (dir, file, data, callback) {
   })
 }
 
-// read data from a file
-lib.read = function (dir, file, callback) {
-  fs.readFile(fileName(dir, file), 'utf8', (error, data) => {
-    if (!error && data) {
-      const parsedData = helpers.parseJSONToObject(data)
-      if (parsedData) {
-        callback(false, parsedData)
-      } else {
-        callback(error, data)
-      }
-    } else {
-      callback(error)
-    };
-  })
-}
-
 // Read data from a file
 // errorMessage parameter defines the message used in case of error
-lib.readAsync = async (dir, file, errorMessage) => {
+lib.readAsync = async (dir, file) => {
   try {
     const data = await _p.readFile(fileName(dir, file), 'utf8')
-    return helpers.parseJSONToObject(data)
+    return helpers.objectify(data)
   } catch (e) {
-    // if no custom messahe specified - just rethrow the exception
-    throw errorMessage !== undefined ? { 'Error': errorMessage } : e
+    // supress rejection
+    return false
   }
 }
 

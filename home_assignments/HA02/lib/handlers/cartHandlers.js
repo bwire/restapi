@@ -94,7 +94,7 @@ function getCart (data, callback) {
   _validator.validateToken(data.headers, (tokenData) => {
     if (tokenData) {
       // find the cart file by user email
-      _data.readAsync('carts', tokenData.eMail)
+      _data.read('carts', tokenData.eMail)
         .then(cartData => {
           callback(_rCodes.OK, { eMail: tokenData.eMail, cart: cartData })
         })

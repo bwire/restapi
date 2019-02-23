@@ -3,12 +3,12 @@
  */
 
 // depnedencies
-const fs = require('fs');
-const { promisify } = require('util');
+const fs = require('fs')
+const { promisify } = require('util')
 
 // main container
-const lib = {};
+const lib = {}
 
-lib.readFile = promisify(fs.readFile); 
+lib.readFile = promisify(fs.readFile)
 
-module.exports = lib;
+module.exports = lib

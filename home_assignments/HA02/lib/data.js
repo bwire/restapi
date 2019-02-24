@@ -42,24 +42,23 @@ lib.write = function (fileDescriptor, stringData, callback) {
   })
 }
 
+// write to the file and close it
+lib.writeAsync = async (fileDescriptor, stringData) => {
+  await _p.writeFile(fileDescriptor, stringData)
+  await _p.closeFile(fileDescriptor)
+}
+
 // write data to a file
-lib.create = function (dir, file, data, callback) {
+lib.create = async (dir, file, data) => {
   // open the file for writing
-  fs.open(fileName(dir, file), 'wx', (error, fileDescriptor) => {
-    if (!error && fileDescriptor) {
-      // convert data to a string
-      const stringData = JSON.stringify(data)
-      // write to the file and close it
-      lib.write(fileDescriptor, stringData, callback)
-    } else {
-      callback("Couldn't create a new file. It may already exist!")
-    }
-  })
+  const fileDescriptor = await _p.openFile(fileName(dir, file), 'wx')
+  await lib.writeAsync(fileDescriptor, JSON.stringify(data))
+  return data
 }
 
 // Read data from a file
 // errorMessage parameter defines the message used in case of error
-lib.readAsync = async (dir, file) => {
+lib.read = async (dir, file) => {
   try {
     const data = await _p.readFile(fileName(dir, file), 'utf8')
     return helpers.objectify(data)
@@ -100,6 +99,11 @@ lib.delete = function (dir, file, callback) {
       callback('Error deleting a file')
     }
   })
+}
+
+// delete a file
+lib.deleteAsync = async (dir, file) => {
+  await _p.unlinkFile(fileName(dir, file))
 }
 
 // export the module

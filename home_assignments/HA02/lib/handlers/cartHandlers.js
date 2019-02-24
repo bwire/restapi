@@ -86,7 +86,8 @@ lib.delete = function (data, callback) {
   updateCart(data, callback)
 }
 
-// service functions
+// ----------------------------------------------------------------------------------------------------------------
+// Service functions
 
 // Create empty shopping cart for the user if it doesn't exist yet or get the existing one
 function getCart (data, callback) {
@@ -96,18 +97,19 @@ function getCart (data, callback) {
       // find the cart file by user email
       _data.read('carts', tokenData.eMail)
         .then(cartData => {
-          callback(_rCodes.OK, { eMail: tokenData.eMail, cart: cartData })
-        })
-        .catch(__ => {
-          // no cart found so create one
-          const emptyCart = []
-          _data.create('carts', tokenData.eMail, emptyCart, (error) => {
-            if (error) {
-              callback(_rCodes.serverError, { 'Error': 'Could not save the shopping cart' })
-            } else {
-              callback(_rCodes.OK, { eMail: tokenData.eMail, cart: emptyCart })
-            }
-          })
+          if (!cartData) {
+            // no cart found so create one
+            const emptyCart = []
+            _data.create('carts', tokenData.eMail, emptyCart)
+              .then(cartData => {
+                callback(_rCodes.OK, { eMail: tokenData.eMail, cart: cartData })
+              })
+              .catch(__ => {
+                callback(_rCodes.serverError, {'Error': 'Could not save the shopping cart'})
+              })
+          } else {
+            callback(_rCodes.OK, { eMail: tokenData.eMail, cart: cartData })
+          }
         })
     } else {
       callback(_rCodes.forbidden, {'Error': 'Missing required token in the header, or the token is not valid'})

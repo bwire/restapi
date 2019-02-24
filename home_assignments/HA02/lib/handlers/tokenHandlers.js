@@ -41,15 +41,14 @@ lib.post = (data, callback) => {
               'id': tokenId,
               'expires': expires
             }
-
             // store the token
-            _data.create('tokens', tokenId, tokenObject, (error) => {
-              if (!error) {
+            _data.create('tokens', tokenId, tokenObject)
+              .then(tokenObject => {
                 callback(_rCodes.OK, tokenObject)
-              } else {
+              })
+              .catch(__ => {
                 callback(500, {'Error': 'Could not create a new token'})
-              };
-            })
+              })
           } else {
             callback(400, {'Error': 'The password provided did not matched the specified user\'s stored'})
           }

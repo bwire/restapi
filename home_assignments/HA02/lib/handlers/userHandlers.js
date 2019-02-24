@@ -43,16 +43,16 @@ lib.post = function (data, callback) {
             }
 
             // store the user
-            _data.create('users', input.eMail, userObject, (error) => {
-              if (!error) {
+            _data.create('users', input.eMail, userObject)
+              .then(userObject => {
                 // remove hashed password form the user object before return it to the requester
                 delete userObject.password
                 callback(200, userObject)
-              } else {
+              })
+              .catch(error => {
                 console.log(error)
                 callback(_rCodes.serverError, {'Error': 'Could not create a new user'})
-              }
-            })
+              })
           }
         } else {
           callback(_rCodes.unauthorized, {'Error': 'The user already exists'})
@@ -74,6 +74,7 @@ lib.get = function (data, callback) {
     // verify that the given token corresponds to the eMail
     _validator.verifyToken(data.headers, input.eMail, (tokenIsValid) => {
       if (tokenIsValid) {
+        console.log(input.eMail)
         _data.read('users', input.eMail)
           .then(userData => {
             if (userData) {

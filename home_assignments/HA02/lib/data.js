@@ -4,20 +4,16 @@
 'use strict'
 
 // dependencies
-
-// TODO get rid of this dependency
-const fs = require('fs')
-const path = require('path')
-
+const _path = require('path')
 const _p = require('./promisifier')
-const helpers = require('./helpers')
+const _helpers = require('./helpers')
 
 // container for the module to be exported
 const lib = {}
 
 // base directory of the data folder
 function baseDir () {
-  return path.join(__dirname, '/../.data/')
+  return _path.join(__dirname, '/../.data/')
 }
 
 // compose file name according to parameters
@@ -26,24 +22,7 @@ function fileName (dir, file) {
 }
 
 // write to the file and close it
-lib.write = function (fileDescriptor, stringData, callback) {
-  fs.writeFile(fileDescriptor, stringData, (error) => {
-    if (!error) {
-      fs.close(fileDescriptor, (error) => {
-        if (error) {
-          callback('Error closing file!')
-        } else {
-          callback(false)
-        }
-      })
-    } else {
-      callback('Error writing to a new file!')
-    }
-  })
-}
-
-// write to the file and close it
-lib.writeAsync = async (fileDescriptor, stringData) => {
+lib.write = async (fileDescriptor, stringData) => {
   await _p.writeFile(fileDescriptor, stringData)
   await _p.closeFile(fileDescriptor)
 }
@@ -52,7 +31,7 @@ lib.writeAsync = async (fileDescriptor, stringData) => {
 lib.create = async (dir, file, data) => {
   // open the file for writing
   const fileDescriptor = await _p.openFile(fileName(dir, file), 'wx')
-  await lib.writeAsync(fileDescriptor, JSON.stringify(data))
+  await lib.write(fileDescriptor, JSON.stringify(data))
   return data
 }
 
@@ -61,7 +40,7 @@ lib.create = async (dir, file, data) => {
 lib.read = async (dir, file) => {
   try {
     const data = await _p.readFile(fileName(dir, file), 'utf8')
-    return helpers.objectify(data)
+    return _helpers.objectify(data)
   } catch (e) {
     // supress rejection
     return false
@@ -69,40 +48,15 @@ lib.read = async (dir, file) => {
 }
 
 // update data in the existing file
-lib.update = function (dir, file, data, callback) {
-  // open the file for writing
-  fs.open(fileName(dir, file), 'r+', (error, fileDescriptor) => {
-    if (!error && fileDescriptor) {
-      // convert data to a string
-      const stringData = JSON.stringify(data)
-      // truncate data
-      fs.truncate(fileDescriptor, (error) => {
-        if (!error) {
-          // write to the file and close it
-          lib.write(fileDescriptor, stringData, callback)
-        } else {
-          callback('Error truncating file')
-        }
-      })
-    } else {
-      callback("Couldn't open the file for updating! It may not exist yet.")
-    }
-  })
+lib.update = async (dir, file, data) => {
+  let fileName = fileName(dir, file)
+  const fileDescriptor = await _p.openFile(fileName, 'r+')
+  await _p.truncateFile(fileName)
+  await lib.write(fileDescriptor, JSON.stringify(data))
 }
 
 // delete a file
-lib.delete = function (dir, file, callback) {
-  fs.unlink(fileName(dir, file), (error) => {
-    if (!error) {
-      callback(false)
-    } else {
-      callback('Error deleting a file')
-    }
-  })
-}
-
-// delete a file
-lib.deleteAsync = async (dir, file) => {
+lib.delete = async (dir, file) => {
   await _p.unlinkFile(fileName(dir, file))
 }
 

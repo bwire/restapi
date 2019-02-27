@@ -59,13 +59,13 @@ lib.put = function (data, callback) {
           cartData.cart.push(data.payload)
         }
 
-        _data.update('carts', cartData.eMail, cartData.cart, (error) => {
-          if (!error) {
+        _data.update('carts', cartData.eMail, cartData.cart)
+          .then(__ => {
             callback(_rCodes.OK, cartData.cart)
-          } else {
+          })
+          .catch(__ => {
             callback(_rCodes.serverError, {'Error': 'Could not update the shopping cart data'})
-          }
-        })
+          })
       } else {
         callback(_rCodes.badRequest, {'Errors': input._errors})
       }
@@ -126,13 +126,13 @@ function updateCart (data, callback) {
       if (typeof (items) === 'object' && items instanceof Array) {
         const result = _validator.valdateCartItems(items)
         if (!result.hasErrors()) {
-          _data.update('carts', cartData.eMail, result.data, (error) => {
-            if (!error) {
+          _data.update('carts', cartData.eMail, result.data)
+            .then(__ => {
               callback(_rCodes.OK, result.data)
-            } else {
+            })
+            .catch(__ => {
               callback(_rCodes.serverError, {'Error': 'Could not update the shopping cart data'})
-            }
-          })
+            })
         } else {
           callback(_rCodes.badRequest, 'Invalid input data format')
         }

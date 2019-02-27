@@ -92,13 +92,13 @@ lib.put = (data, callback) => {
             // set the expiration an hour from now
             tokenObject.expires += Date.now() + 1000 * 60 * 60
             // Store updated data to disk
-            _data.update('tokens', input.id, tokenObject, (error) => {
-              if (!error) {
-                callback(200, tokenObject)
-              } else {
-                callback(500, {'Error': 'Could not update the token\'s expiration'})
-              }
-            })
+            _data.update('tokens', input.id, tokenObject)
+              .then(__ => {
+                callback(_rCodes.OK, tokenObject)
+              })
+              .catch(__ => {
+                callback(_rCodes.serverError, {'Error': 'Could not update the token\'s expiration'})
+              })
           } else {
             callback(400, {'Error': 'The token has already expired and cannot be restored!'})
           }
@@ -121,20 +121,19 @@ lib.delete = (data, callback) => {
     _data.read('tokens', input.id)
       .then(tokenData => {
         if (tokenData) {
-          _data.delete('tokens', input.id, (error) => {
-            if (!error) {
-              callback(200)
-            } else {
-              callback(500, {'Error': 'Could not delete specified token'})
-            }
-          })
+          _data.delete('tokens', input.id)
+            .then(__ => {
+              callback(_rCodes.OK)
+            })
+            .catch(__ => {
+              callback(_rCodes.serverError, {'Error': 'Could not delete specified token'})
+            })
         } else {
-          callback(_rCodes.unauthorized, {'Errors': 'Invalid token'})
+          callback(_rCodes.unauthorized, {'Error': 'A token does not exist'})
         }
       })
-      .catch(e => callback(404, e))
   } else {
-    callback(_rCodes.notFound, { 'Error': input._errors })
+    callback(_rCodes.notFound, { 'Errors': input._errors })
   };
 }
 

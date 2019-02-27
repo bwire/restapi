@@ -14,5 +14,6 @@ lib.openFile = promisify(fs.open)
 lib.closeFile = promisify(fs.close)
 lib.writeFile = promisify(fs.writeFile)
 lib.unlinkFile = promisify(fs.unlink)
+lib.truncateFile = promisify(fs.truncate)
 
 module.exports = lib

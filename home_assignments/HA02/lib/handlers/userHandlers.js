@@ -131,16 +131,14 @@ lib.put = function (data, callback) {
                   }
 
                   // store updated data
-                  _data.update('users', input.eMail, userData, (error) => {
-                    if (!error) {
+                  _data.update('users', input.eMail, userData)
+                    .then(_ => {
                       delete userData.password
-                      callback(200, userData)
-                    } else {
-                      callback(500, {
-                        'Error': 'Could not update the user'
-                      })
-                    }
-                  })
+                      callback(_rCodes.OK, userData)
+                    })
+                    .catch(__ => {
+                      callback(_rCodes.serverError, {'Error': 'Could not update the user'})
+                    })
                 } else {
                   callback(_rCodes.unauthorized, {'Errors': 'User not found'})
                 }
@@ -167,9 +165,6 @@ lib.put = function (data, callback) {
 lib.delete = function (data, callback) {
   // validatate eMail address
   const input = _validator.validate('eMail', data.queryStringObject)
-
-  console.log(input)
-
   if (input.eMail) {
     // verify that the given token corresponds to the eMail
     _validator.verifyToken(data.headers, input.eMail, (tokenIsValid) => {
@@ -177,13 +172,13 @@ lib.delete = function (data, callback) {
         _data.read('users', input.eMail)
           .then(userData => {
             if (userData) {
-              _data.delete('users', input.eMail, (error) => {
-                if (!error) {
-                  callback(200)
-                } else {
-                  callback(500, {'Error': 'Could not delete the user!'})
-                }
-              })
+              _data.delete('users', input.eMail)
+                .then(__ => {
+                  callback(_rCodes.OK)
+                })
+                .catch(__ => {
+                  callback(_rCodes.serverError, {'Error': 'Could not delete the user!'})
+                })
             } else {
               callback(_rCodes.forbidden, {'Errors': 'No user found'})
             }

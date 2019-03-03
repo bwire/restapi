@@ -13,182 +13,163 @@ const _rCodes = require('../responseCodes')
 const lib = {}
 
 // main dispatcher function
-function users (data, callback) {
+async function users (data) {
   if (_validator.acceptableMethods.indexOf(data.method) !== -1) {
-    lib[data.method](data, callback)
+    return await lib[data.method](data)
   }
 }
 
 // USERS - POST
 // Requested data: password, firstName, lastName, eMail, address
 // Optional data: none
-lib.post = function (data, callback) {
-  // validtate necessary payload fields
-  const input = _validator.validate('password, firstName, lastName, eMail, address', data.payload)
-  if (!input.hasErrors()) {
-    // make sure that the user doesn't already exist
-    _data.read('users', input.eMail)
-      .then(userData => {
-        if (!userData) {
-          // hash the password
-          const hashedPassword = _helpers.hash(input.password)
-          if (hashedPassword) {
-            // create the user object
-            var userObject = {
-              'password': hashedPassword,
-              'firstName': input.firstName,
-              'lastName': input.lastName,
-              'eMail': input.eMail,
-              'address': input.address
-            }
+lib.post = async (data) => {
+  try {
+    // validtate necessary payload fields
+    const input = _validator.validate('password, firstName, lastName, eMail, address', data.payload)
+    if (input.hasErrors()) {
+      return _helpers.resultify(_rCodes.badRequest, { 'Errors': input._errors })
+    }
 
-            // store the user
-            _data.create('users', input.eMail, userObject)
-              .then(userObject => {
-                // remove hashed password form the user object before return it to the requester
-                delete userObject.password
-                callback(200, userObject)
-              })
-              .catch(error => {
-                console.log(error)
-                callback(_rCodes.serverError, {'Error': 'Could not create a new user'})
-              })
-          }
-        } else {
-          callback(_rCodes.unauthorized, {'Error': 'The user already exists'})
-        }
-      })
-      .catch(e => callback(_rCodes.forbidden, e))
-  } else {
-    callback(_rCodes.badRequest, { 'Errors': input._errors })
+    // make sure that the user doesn't already exist
+    let userData = await _data.read('users', input.eMail)
+    if (userData) {
+      return _helpers.resultify(_rCodes.unauthorized, {'Error': 'The user already exists'})
+    }
+
+    // hash the password
+    const hashedPassword = _helpers.hash(input.password)
+    if (!hashedPassword) {
+      return _helpers.resultify(_rCodes.serverError, {'Error': 'Could not hash the password'})
+    }
+
+    // create the user object
+    var userObject = {
+      'password': hashedPassword,
+      'firstName': input.firstName,
+      'lastName': input.lastName,
+      'eMail': input.eMail,
+      'address': input.address
+    }
+    // store the user
+    userData = await _data.create('users', input.eMail, userObject)
+    // remove hashed password form the user object before return it to the requester
+    delete userData.password
+
+    return _helpers.resultify(_rCodes.OK, userData)
+  } catch (e) {
+    console.log(e)
+    return _helpers.resultify(_rCodes.serverError, {'Error': 'Could not create a new user'})
   }
 }
 
 // USERS - GET
 // Requested data: eMail
 // Optional data: none
-lib.get = function (data, callback) {
+lib.get = async (data) => {
   // validate eMail address
-  var input = _validator.validate('eMail', data.queryStringObject)
-  if (input.eMail) {
-    // verify that the given token corresponds to the eMail
-    _validator.verifyToken(data.headers, input.eMail, (tokenIsValid) => {
-      if (tokenIsValid) {
-        console.log(input.eMail)
-        _data.read('users', input.eMail)
-          .then(userData => {
-            if (userData) {
-              // remove hashed password form the user object before return it to the requester
-              delete userData.password
-              callback(200, userData)
-            } else {
-              callback(_rCodes.forbidden, {'Errors': 'No user found!'})
-            }
-          })
-      } else {
-        callback(403, {'Error': 'Missing required token in the header, or the token is not valid'})
-      }
-    })
+  const input = _validator.validate('eMail', data.queryStringObject)
+  if (!input.eMail) {
+    return _helpers.resultify(_rCodes.badRequest, {'Errors': input._errors})
+  }
+
+  // verify that the given token corresponds to the eMail
+  const tokenIsValid = await _validator.verifyToken(data.headers, input.eMail)
+  if (!tokenIsValid) {
+    return _helpers.resultify(_rCodes.forbidden, {'Error': 'Missing required token in the header, or the token is not valid'})
+  }
+
+  const userData = await _data.read('users', input.eMail)
+  if (userData) {
+    // remove hashed password form the user object before return it to the requester
+    delete userData.password
+    return _helpers.resultify(_rCodes.OK, userData)
   } else {
-    callback(400, {'Errors': input._errors})
+    return _helpers.resultify(_rCodes.notFound, {'Errors': 'No user found!'})
   }
 }
 
 // USERS - PUT
 // Requested data: eMail
 // Optional data: password, firstName, lastName, address (at least one must be specified)
-lib.put = function (data, callback) {
-  // array of possible fields
-  const fields = ['password', 'firstName', 'lastName', 'address']
-    .filter((v, _, __) => data.payload.hasOwnProperty(v))
-  if (fields.length !== 0) {
+lib.put = async (data) => {
+  try {
+    // array of possible fields
+    const fields = ['password', 'firstName', 'lastName', 'address']
+      .filter((v, _, __) => data.payload.hasOwnProperty(v))
     // at least one field presents in the payload
+    if (fields.length === 0) {
+      return _helpers.resultify(_rCodes.badRequest, {'Errors': 'At least one field should be provided'})
+    }
     fields.push('eMail')
+
     // validate fields
     const input = _validator.validate(fields.join(', '), data.payload)
-    if (!input.hasErrors()) {
-      // verify that the given token corresponds to the eMail
-      _validator.verifyToken(data.headers, input.eMail, (tokenIsValid) => {
-        if (tokenIsValid) {
-          // error if nothing is sent to update
-          if (input.firstName || input.lastName || input.address || input.password) {
-            // Look up the user
-            _data.read('users', input.eMail)
-              .then(userData => {
-                if (userData) {
-                  // update necessary fields
-                  if (input.firstName) {
-                    userData.firstName = input.firstName
-                  }
-                  if (input.lastName) {
-                    userData.lastName = input.lastName
-                  }
-                  if (input.address) {
-                    userData.address = input.address
-                  }
-                  if (input.password) {
-                    userData.password = _helpers.hash(input.password)
-                  }
-
-                  // store updated data
-                  _data.update('users', input.eMail, userData)
-                    .then(_ => {
-                      delete userData.password
-                      callback(_rCodes.OK, userData)
-                    })
-                    .catch(__ => {
-                      callback(_rCodes.serverError, {'Error': 'Could not update the user'})
-                    })
-                } else {
-                  callback(_rCodes.unauthorized, {'Errors': 'User not found'})
-                }
-              })
-              .catch(e => callback(_rCodes.badRequest, e))
-          } else {
-            callback(400, {'Error': 'Missing fields to update'})
-          }
-        } else {
-          callback(403, {'Error': 'Missing required token in the header, or the token is not valid'})
-        }
-      })
-    } else {
-      callback(400, {'Errors': input._errors})
+    if (input.hasErrors()) {
+      return _helpers.resultify(_rCodes.badRequest, {'Errors': input._errors})
     }
-  } else {
-    callback(_rCodes.badRequest, {'Error': 'At least one field to update should be provided'})
+
+    // verify that the given token corresponds to the eMail
+    const tokenIsValid = await _validator.verifyToken(data.headers, input.eMail)
+    if (!tokenIsValid) {
+      return _helpers.resultify(_rCodes.forbidden, {'Error': 'Missing required token in the header, or the token is not valid'})
+    }
+
+    // Look up the user
+    const userData = await _data.read('users', input.eMail)
+    if (!userData) {
+      return _helpers.resultify(_rCodes.notFound, {'Errors': 'User not found'})
+    }
+
+    // update necessary fields
+    if (input.firstName) {
+      userData.firstName = input.firstName
+    }
+    if (input.lastName) {
+      userData.lastName = input.lastName
+    }
+    if (input.address) {
+      userData.address = input.address
+    }
+    if (input.password) {
+      userData.password = _helpers.hash(input.password)
+    }
+
+    // store updated data
+    await _data.update('users', input.eMail, userData)
+    delete userData.password
+    return _helpers.resultify(_rCodes.OK, userData)
+  } catch (e) {
+    _helpers.resultify(_rCodes.serverError, {'Error': 'Could not update the user'})
   }
 }
 
 // USERS - DELETE
 // Requested data: eMail
 // Optional data: none
-lib.delete = function (data, callback) {
-  // validatate eMail address
-  const input = _validator.validate('eMail', data.queryStringObject)
-  if (input.eMail) {
+lib.delete = async (data) => {
+  try {
+    // validatate eMail address
+    const input = _validator.validate('eMail', data.queryStringObject)
+    if (!input.eMail) {
+      return _helpers.resultify(_rCodes.badRequest, {'Errors': input._errors})
+    }
+
     // verify that the given token corresponds to the eMail
-    _validator.verifyToken(data.headers, input.eMail, (tokenIsValid) => {
-      if (tokenIsValid) {
-        _data.read('users', input.eMail)
-          .then(userData => {
-            if (userData) {
-              _data.delete('users', input.eMail)
-                .then(__ => {
-                  callback(_rCodes.OK)
-                })
-                .catch(__ => {
-                  callback(_rCodes.serverError, {'Error': 'Could not delete the user!'})
-                })
-            } else {
-              callback(_rCodes.forbidden, {'Errors': 'No user found'})
-            }
-          })
-      } else {
-        callback(403, {'Error': 'Missing required token in the header, or the token is not valid'})
-      }
-    })
-  } else {
-    callback(400, {'Errors': input._errors})
+    const tokenIsValid = await _validator.verifyToken(data.headers, input.eMail)
+    if (!tokenIsValid) {
+      return _helpers.resultify(_rCodes.unauthorized, {'Error': 'Missing required token in the header, or the token is not valid'})
+    }
+
+    // check if user exists
+    const userData = await _data.read('users', input.eMail)
+    if (!userData) {
+      return _helpers.resultify(_rCodes.notFound, {'Errors': 'No user found'})
+    }
+
+    await _data.delete('users', input.eMail)
+    return _helpers.resultify(_rCodes.OK)
+  } catch (e) {
+    _helpers.resultify(_rCodes.serverError, {'Error': 'Could not delete the user!'})
   }
 }
 

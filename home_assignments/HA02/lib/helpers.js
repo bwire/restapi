@@ -45,5 +45,11 @@ lib.objectify = (str) => {
   }
 }
 
+lib.resultify = (code, data = {}) => {
+  return {
+    'code': code,
+    'payload': data
+  }
+}
 module.exports = lib
 

@@ -49,7 +49,12 @@ lib.read = async (dir, file) => {
 
 // update data in the existing file
 lib.update = async (dir, file, data) => {
-  let fileName = fileName(dir, file)
+
+  console.log('before')
+  const fileName = fileName(dir, file)
+
+  console.log('after')
+
   const fileDescriptor = await _p.openFile(fileName, 'r+')
   await _p.truncateFile(fileName)
   await lib.write(fileDescriptor, JSON.stringify(data))

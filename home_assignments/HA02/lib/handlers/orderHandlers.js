@@ -28,34 +28,34 @@ lib.post = function (data, callback) {
   const input = _validator.validate('stripeToken', data.payload)
   if (!input.hasErrors()) {
     // validate token
-    _validator.validateToken(data.headers, (tokenData) => {
-      if (tokenData) {
-        // find the cart file by user email
-        _data.read('carts', tokenData.eMail)
-          .then(cartData => {
-            if (cartData) {
-              // TODO Is all these data really needed?
-              let orderData = {
-                token: input.stripeToken,
-                date: Date.now(),
-                eMail: tokenData.eMail,
-                items: cartData,
-                sum: cartData.reduce((acc, val) => acc + val.qty * val.price, 0)
+    _validator.validateToken(data.headers)
+      .then(tokenData => {
+        if (tokenData) {
+          // find the cart file by user email
+          _data.read('carts', tokenData.eMail)
+            .then(cartData => {
+              if (cartData) {
+                // TODO Is all these data really needed?
+                let orderData = {
+                  token: input.stripeToken,
+                  date: Date.now(),
+                  eMail: tokenData.eMail,
+                  items: cartData,
+                  sum: cartData.reduce((acc, val) => acc + val.qty * val.price, 0)
+                }
+                // try to pay
+                payOrder(orderData, (error, paymentData) => {
+                  const res = !error && paymentData ? 200 : _rCodes.serverError
+                  callback(res)
+                })
+              } else {
+                callback(_rCodes.OK, {'Message': 'Your cart is empty! Nothing to order!'})
               }
-
-              // try to pay
-              payOrder(orderData, (error, paymentData) => {
-                const res = !error && paymentData ? 200 : _rCodes.serverError
-                callback(res)
-              })
-            } else {
-              callback(_rCodes.OK, {'Message': 'Your cart is empty! Nothing to order!'})
-            }
-          })
-      } else {
-        callback(403, {'Error': 'Missing required token in the header, or the token is not valid'})
-      }
-    })
+            })
+        } else {
+          callback(403, {'Error': 'Missing required token in the header, or the token is not valid'})
+        }
+      })
   } else {
     callback(400, {'Errors': input._errors})
   }

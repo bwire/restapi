@@ -57,37 +57,23 @@ lib.validate = function (fieldsString, container) {
 }
 
 // verify if the given token id is currently valid for the given user
-lib.verifyToken = function (headers, eMail, callback) {
-  lib.validateToken(headers, (tokenData) => {
-    if (tokenData && tokenData.eMail === eMail) {
-      callback(true)
-    } else {
-      callback(false)
-    }
-  })
+lib.verifyToken = async (headers, eMail) => {
+  const tokenData = await lib.validateToken(headers)
+  return (tokenData && tokenData.eMail === eMail)
 }
 
 // verify if the given token id is currently valid
-lib.validateToken = function (headers, callback) {
+lib.validateToken = async (headers) => {
   // get the token from the headers
   const id = typeof (headers.token) === 'string' ? headers.token : false
-  if (id !== false) {
-    _data.read('tokens', id)
-      .then(tokenData => {
-        if (tokenData) {
-          // Check that the token is for the current user and it is not expired
-          if (tokenData.expires > Date.now()) {
-            callback(tokenData)
-          } else {
-            callback(false)
-          }
-        } else {
-          callback(false)
-        }
-      })
-  } else {
-    callback(false)
+  if (id) {
+    const tokenData = await _data.read('tokens', id)
+    if (tokenData) {
+      // Check that the token is for the current user and it is not expired
+      return (tokenData.expires > Date.now()) ? tokenData : false
+    }
   }
+  return false
 }
 
 // order data validating

@@ -10,6 +10,9 @@ const _menuHadlers = require('./handlers/menuHandlers')
 const _cartHadlers = require('./handlers/cartHandlers')
 const _orderHadlers = require('./handlers/orderHandlers')
 
+const _helpers = require('./helpers')
+const _rCodes = require('./responseCodes')
+
 const lib = {}
 
 // main dispatchers
@@ -19,21 +22,21 @@ lib.menu = _menuHadlers
 lib.cart = _cartHadlers
 lib.orders = _orderHadlers
 
-lib.login = function (data, callback) {
+lib.login = async (data, callback) => {
   if (data.method === 'post') {
-    lib.tokens(data, callback)
+    await lib.tokens(data)
   } else {
-    callback(404)
+    return _helpers.resultify(_rCodes.notFound)
   }
 }
 
-lib.logout = function (data, callback) {
+lib.logout = async (data) => {
   if (data.method === 'delete') {
     // manually write QueryStringObject to satify Delete request for a token
     data.queryStringObject = { 'id': data.headers.token }
-    lib.tokens(data, callback)
+    await lib.tokens(data)
   } else {
-    callback(404)
+    return _helpers.resultify(_rCodes.notFound)
   }
 }
 
@@ -41,13 +44,13 @@ lib.logout = function (data, callback) {
 // Service
 
 // simple ping handler
-lib.ping = function (data, callback) {
-  callback(200)
+lib.ping = async () => {
+  return _helpers.resultify(_rCodes.OK, {})
 }
 
 // not found handler
-lib.notFoundHandler = function (data, callback) {
-  callback(404)
+lib.notFoundHandler = async () => {
+  return _helpers.resultify(_rCodes.notFound)
 }
 
 module.exports = lib

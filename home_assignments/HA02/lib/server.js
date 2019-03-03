@@ -3,51 +3,51 @@
 // ----------------------------------------------------------------------------------------------------------------
 'use strict'
 
-const http = require('http')
-const https = require('https')
-const fs = require('fs')
-const url = require('url')
-const StringDecoder = require('string_decoder').StringDecoder
-const path = require('path')
-const util = require('util')
-const debug = util.debuglog('server')
+const _http = require('http')
+const _https = require('https')
+const _fs = require('fs')
+const _url = require('url')
+const _StringDecoder = require('string_decoder').StringDecoder
+const _path = require('path')
+const _util = require('util')
+const _debug = _util.debuglog('server')
 
-const config = require('../config')
-const handlers = require('./handlers')
-const helpers = require('./helpers')
+const _config = require('../config')
+const _handlers = require('./handlers')
+const _helpers = require('./helpers')
 
 // instantiate the server object
 const server = {}
 
-const httpServer = http.createServer((req, res) => {
+const httpServer = _http.createServer((req, res) => {
   unifiedServer(req, res)
 })
 
 // start https server
 const httpsServerOptions = {
-  'key': fs.readFileSync(path.join(__dirname, '/../https/key.pm')),
-  'cert': fs.readFileSync(path.join(__dirname, '/../https/cert.pe'))
+  'key': _fs.readFileSync(_path.join(__dirname, '/../https/key.pm')),
+  'cert': _fs.readFileSync(_path.join(__dirname, '/../https/cert.pe'))
 }
 
-const httpsServer = https.createServer(httpsServerOptions, (req, res) => {
+const httpsServer = _https.createServer(httpsServerOptions, (req, res) => {
   unifiedServer(req, res)
 })
 
 // main router (ADD ROUTES HERE!!)
 const router = {
-  'ping': handlers.ping,
-  'users': handlers.users,
-  'login': handlers.login,
-  'logout': handlers.logout,
-  'tokens': handlers.tokens,
-  'menu': handlers.menu,
-  'cart': handlers.cart,
-  'orders': handlers.orders
+  'users': _handlers.users,
+  'login': _handlers.login,
+  'logout': _handlers.logout,
+  'tokens': _handlers.tokens,
+  'menu': _handlers.menu,
+  'cart': _handlers.cart,
+  'orders': _handlers.orders,
+  'ping': _handlers.ping
 }
 
-const unifiedServer = function (req, res) {
+const unifiedServer = (req, res) => {
   // get url and parse it
-  const parsedUrl = url.parse(req.url, true)
+  const parsedUrl = _url.parse(req.url, true)
 
   // get the path
   const path = parsedUrl.pathname
@@ -63,7 +63,7 @@ const unifiedServer = function (req, res) {
   const headers = req.headers
 
   // payload (if any)
-  const decoder = new StringDecoder('utf-8')
+  const decoder = new _StringDecoder('utf-8')
   var buffer = ''
 
   // events
@@ -71,12 +71,11 @@ const unifiedServer = function (req, res) {
     buffer += decoder.write(data)
   })
 
-  req.on('end', () => {
+  req.on('end', async () => {
     buffer += decoder.end()
-
     // choose the handler request should go to
     const choosenHandler = router[trimmedPath] !== undefined
-      ? router[trimmedPath] : handlers.notFoundHandler
+      ? router[trimmedPath] : _handlers.notFoundHandler
 
     // construct the data to be send to the handler
     const data = {
@@ -84,44 +83,44 @@ const unifiedServer = function (req, res) {
       'queryStringObject': queryStringObject,
       'method': method,
       'headers': headers,
-      'payload': helpers.objectify(buffer)
+      'payload': _helpers.objectify(buffer)
     }
 
-    choosenHandler(data, (code, payload) => {
-      // Use the status code returned from the handler, or set the default status code to 200
-      const statusCode = typeof (code) === 'number' ? code : 200
+    const {code, payload} = await choosenHandler(data)
 
-      // Use the payload returned from the handler, or set the default payload to an empty object
-      const payloadObject = typeof (payload) === 'object' ? payload : {}
+    // Use the status code returned from the handler, or set the default status code to 200
+    const statusCode = typeof (code) === 'number' ? code : 200
 
-      // convert the payload to string
-      const payloadString = JSON.stringify(payloadObject)
+    // Use the payload returned from the handler, or set the default payload to an empty object
+    const payloadObject = typeof (payload) === 'object' ? payload : {}
 
-      res.setHeader('Content-Type', 'application/json')
-      res.writeHead(statusCode)
+    // convert the payload to string
+    const payloadString = JSON.stringify(payloadObject)
 
-      // send the response
-      res.end(payloadString)
+    res.setHeader('Content-Type', 'application/json')
+    res.writeHead(statusCode)
 
-      // If the response is 200 print in green, otherwise in red
-      if (statusCode === 200) {
-        debug('\x1b[32m%s\x1b[0m', `${method.toUpperCase()} ' /' ${trimmedPath} ' ' + ${statusCode}`)
-      } else {
-        debug('\x1b[31m%s\x1b[0m', `${method.toUpperCase()} ' /' ${trimmedPath} ' ' + ${statusCode}`)
-      }
-    })
+    // send the response
+    res.end(payloadString)
+
+    // If the response is 200 print in green, otherwise in red
+    if (statusCode === 200) {
+      _debug('\x1b[32m%s\x1b[0m', `${method.toUpperCase()} ' /' ${trimmedPath} ' ' + ${statusCode}`)
+    } else {
+      _debug('\x1b[31m%s\x1b[0m', `${method.toUpperCase()} ' /' ${trimmedPath} ' ' + ${statusCode}`)
+    }
   })
 }
 
 server.init = function () {
   // Start http server
-  httpServer.listen(config.httpPort, function () {
-    console.log('\x1b[36m%s\x1b[0m', `The server is listening on port ${config.httpPort} with ${config.envName} now...`)
+  httpServer.listen(_config.httpPort, function () {
+    console.log('\x1b[36m%s\x1b[0m', `The server is listening on port ${_config.httpPort} with ${_config.envName} now...`)
   })
 
   // Start https server
-  httpsServer.listen(config.httpsPort, function () {
-    console.log('\x1b[35m%s\x1b[0m', `The server is listening on port ${config.httpsPort} with ${config.envName} now...`)
+  httpsServer.listen(_config.httpsPort, function () {
+    console.log('\x1b[35m%s\x1b[0m', `The server is listening on port ${_config.httpsPort} with ${_config.envName} now...`)
   })
 }
 

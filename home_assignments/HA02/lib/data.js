@@ -49,10 +49,14 @@ lib.read = async (dir, file) => {
 
 // update data in the existing file
 lib.update = async (dir, file, data) => {
-  const fName = fileName(dir, file)
-  const fileDescriptor = await _p.openFile(fName, 'r+')
-  await _p.truncateFile(fName)
-  await lib.write(fileDescriptor, JSON.stringify(data))
+  try {
+    const fName = fileName(dir, file)
+    const fileDescriptor = await _p.openFile(fName, 'r+')
+    await _p.truncateFile(fName)
+    await lib.write(fileDescriptor, JSON.stringify(data))
+  } catch (e) {
+    console.log(e)
+  }
 }
 
 // delete a file

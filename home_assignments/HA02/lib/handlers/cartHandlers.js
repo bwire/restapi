@@ -31,59 +31,56 @@ lib.post = async (data) => {
 // Return all shopping cart items
 // Required data: id
 // Optional data: none
-/* lib.get = async (data) => {
-  const cartData = await getCart(data.handlers)
-  if (resultCode === _rCodes.OK) {
-    callback(resultCode, data.cart)
-  } else {
-    callback(resultCode, data)
-  }
-} */
+lib.get = async (data) => {
+  return await getCart(data)
+}
 
 // Cart - PUT
 // Requested data: none
 // Optional data: none
-lib.put = function (data, callback) {
-  getCart(data, (resultCode, cartData) => {
-    if (resultCode === _rCodes.OK) {
-      const input = _validator.validateCartItem(data.payload)
-      if (!input.hasErrors()) {
-        // data gets added to the existing position in the cart or new position will be created
-        const cartItem = cartData.cart.find((elem, idx, arr) => {
-          if (elem.menuItemID === input.menuItemID) return elem
-        })
-        if (cartItem !== undefined) {
-          // there is already the item in the cart
-          cartItem.qty += input.qty
-        } else {
-          cartData.cart.push(data.payload)
-        }
-
-        _data.update('carts', cartData.eMail, cartData.cart)
-          .then(__ => {
-            callback(_rCodes.OK, cartData.cart)
-          })
-          .catch(__ => {
-            callback(_rCodes.serverError, {'Error': 'Could not update the shopping cart data'})
-          })
-      } else {
-        callback(_rCodes.badRequest, {'Errors': input._errors})
-      }
-    } else {
-      // pass the error forward
-      callback(resultCode, cartData)
+lib.put = async function (data) {
+  try {
+    const input = _validator.validateCartItem(data.payload)
+    if (input.hasErrors()) {
+      return _helpers.resultify(_rCodes.badRequest, {'Errors': input._errors})
     }
-  })
+
+    const result = await getCart(data)
+    if (result.code !== _rCodes.OK) {
+      // if there are any error - just put them forward
+      return result
+    }
+
+    // data gets added to the existing position in the cart or new position will be created
+    const cartData = result.payload.cart
+    const cartItem = cartData.find((elem, idx, arr) => {
+      if (elem.menuItemID === input.menuItemID) return elem
+    })
+
+    if (cartItem !== undefined) {
+      // there is already the item in the cart
+      const idx = cartData.indexOf(cartItem)
+      cartItem.qty += input.qty
+      cartData[idx] = cartItem
+    } else {
+      cartData.push(data.payload)
+    }
+
+    await _data.update('carts', result.payload.eMail, cartData)
+    return _helpers.resultify(_rCodes.OK, cartData)
+  } catch (__) {
+    return _helpers.resultify(_rCodes.serverError, {'Error': 'Could not update the shopping cart data'})
+  }
 }
 
 // Cart - DELETE
 // Empty the shopping cart
 // Requested data: array of obects {id: number, qty: number, price: number}
 // Optional data: none
-lib.delete = function (data, callback) {
+lib.delete = async (data) => {
   // just in case
   data.payload = []
-  updateCart(data, callback)
+  return await updateCart(data)
 }
 
 // ----------------------------------------------------------------------------------------------------------------
@@ -99,6 +96,7 @@ async function getCart (data) {
 
   // find the cart file by user email
   const cartData = await _data.read('carts', tokenData.eMail)
+
   if (cartData) {
     return _helpers.resultify(_rCodes.OK, { eMail: tokenData.eMail, cart: cartData })
   }
@@ -106,7 +104,7 @@ async function getCart (data) {
   // no cart found so create one
   const newData = await _data.create('carts', tokenData.eMail, [])
   return newData
-    ? _helpers.resultify(_rCodes.OK, { eMail: tokenData.eMail, cart: cartData })
+    ? _helpers.resultify(_rCodes.OK, { eMail: tokenData.eMail, cart: [] })
     : _helpers.resultify(_rCodes.serverError, {'Error': 'Could not save the shopping cart'})
 }
 

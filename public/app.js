@@ -2,4 +2,5 @@
 
 const app = {}
 
-console.log('Frontend part')
+console.log('Frontend part', app)
+

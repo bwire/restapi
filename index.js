@@ -1,22 +1,22 @@
-//----------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------
 // Primary API
-//----------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------
 
 // Dependencies
-const server = require('./lib/server');
-const workers = require('./lib/workers');
+const server = require('./lib/server')
+const workers = require('./lib/workers')
 
-var app = {};
+var app = {}
 
 // Init function
-app.init = function() {
+app.init = function () {
   // Start the server
-  server.init();
+  server.init()
   // Start the workers
-  workers.init();
-};
+  workers.init()
+}
 
 // Execute initialization
-app.init();
+app.init()
 
-module.exports = app;
+module.exports = app

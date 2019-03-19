@@ -6,6 +6,7 @@
 // dependencies
 const _data = require('../data')
 const _validator = require('../validator')
+const _helpers = require('../helpers')
 const _https = require('https')
 const _rCodes = require('../responseCodes')
 const StringDecoder = require('string_decoder').StringDecoder
@@ -14,55 +15,50 @@ const StringDecoder = require('string_decoder').StringDecoder
 const lib = {}
 
 // main dispatcher function
-function orders (data, callback) {
+async function orders (data) {
   if (['post', 'get'].indexOf(data.method) !== -1) {
-    lib[data.method](data, callback)
+    return lib[data.method](data)
   }
 }
 
 // ORDERS - POST
 // Requested data: stripeToken
 // Optional data: none
-lib.post = function (data, callback) {
+lib.post = async (data) => {
   // validtate Stripe token (eMail provided via headers token)
   const input = _validator.validate('stripeToken', data.payload)
-  if (!input.hasErrors()) {
-    // validate token
-    _validator.validateToken(data.headers)
-      .then(tokenData => {
-        if (tokenData) {
-          // find the cart file by user email
-          _data.read('carts', tokenData.eMail)
-            .then(cartData => {
-              if (cartData) {
-                // TODO Is all these data really needed?
-                let orderData = {
-                  token: input.stripeToken,
-                  date: Date.now(),
-                  eMail: tokenData.eMail,
-                  items: cartData,
-                  sum: cartData.reduce((acc, val) => acc + val.qty * val.price, 0)
-                }
-                // try to pay
-                payOrder(orderData, (error, paymentData) => {
-                  const res = !error && paymentData ? 200 : _rCodes.serverError
-                  callback(res)
-                })
-              } else {
-                callback(_rCodes.OK, {'Message': 'Your cart is empty! Nothing to order!'})
-              }
-            })
-        } else {
-          callback(403, {'Error': 'Missing required token in the header, or the token is not valid'})
-        }
-      })
-  } else {
-    callback(400, {'Errors': input._errors})
+  if (input.hasErrors()) {
+    return _helpers.resultify(_rCodes.badRequest, { 'Errors': input._errors })
   }
+  // validate token
+  const tokenData = await _validator.validateToken(data.headers)
+  if (!tokenData) {
+    return _helpers.resultify(_rCodes.forbidden, {'Error': 'Missing required token in the header, or the token is not valid'})
+  }
+
+  // find the cart file by user email
+  const cartData = _data.read('carts', tokenData.eMail)
+  if (!cartData) {
+    return _helpers.resultify(_rCodes.OK, {'Message': 'Your cart is empty! Nothing to order!'})
+  }
+
+  // TODO Is all these data really needed?
+  let orderData = {
+    token: input.stripeToken,
+    date: Date.now(),
+    eMail: tokenData.eMail,
+    items: cartData,
+    sum: cartData.reduce((acc, val) => acc + val.qty * val.price, 0)
+  }
+  // try to pay
+  payOrder(orderData, (error, paymentData) => {
+    const res = !error && paymentData ? 200 : _rCodes.serverError
+    return res
+  })
 }
 
 // service
-function payOrder (orderData, callback) {
+async function payOrder (orderData, callback) {
   let payload = {
     'amount': orderData.sum,
     'currency': 'usd',

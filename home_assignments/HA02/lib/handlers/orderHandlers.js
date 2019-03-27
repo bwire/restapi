@@ -43,10 +43,8 @@ lib.post = async (data) => {
     return _helpers.resultify(_rCodes.OK, {'Message': 'Your cart is empty! Nothing to order!'})
   }
 
-  // TODO Is all these data really needed?
   let orderData = {
     token: input.stripeToken,
-    date: Date.now(),
     eMail: tokenData.eMail,
     sum: cartData.reduce((acc, val) => acc + val.qty * val.price, 0)
   }
@@ -70,7 +68,7 @@ async function payOrder (orderData) {
     'method': 'POST',
     'headers': {
       'Content-Type': 'application/json',
-      'Autorization': 'Bearer MY_TEST_KEY'
+      'Autorization': 'Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc'
     }
   }
 

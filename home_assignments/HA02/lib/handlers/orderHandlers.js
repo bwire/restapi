@@ -4,11 +4,14 @@
 'use strict'
 
 // dependencies
+const _config = require('../../config')
 const _data = require('../data')
 const _validator = require('../validator')
 const _helpers = require('../helpers')
 const _https = require('https')
 const _rCodes = require('../responseCodes')
+
+const _querystring = require('querystring')
 const StringDecoder = require('string_decoder').StringDecoder
 
 // main container
@@ -54,28 +57,28 @@ lib.post = async (data) => {
 
 // service
 async function payOrder (orderData) {
-  const payloadString = JSON.stringify({
-    'amount': orderData.sum,
+  const payloadString = _querystring.stringify({
+    'amount': 5000,
     'currency': 'usd',
-    'source': 'sk_test_4eC39HqLyjWDarjtT1zdp7dc',
+    'source': orderData.token,
     'description': `Order # ${orderData.date} for ${orderData.eMail}`
   })
 
   let options = {
-    'protocol': 'https:',
-    'host': 'api.stripe.com',
-    'path': 'v1/charges',
+    'hostname': 'api.stripe.com',
+    'path': '/v1/charges',
     'method': 'POST',
     'headers': {
-      'Content-Type': 'application/json',
-      'Autorization': 'Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc'
+      'Authorization': `Bearer ${_config.stripeKey}`
     }
   }
 
   try {
     let result = await httpRequest(payloadString, options)
+    console.log(result)
     return _helpers.resultify(_rCodes.OK, result)
   } catch (e) {
+    console.log(e)
     return _helpers.resultify(_rCodes.serverError, e)
   }
 }

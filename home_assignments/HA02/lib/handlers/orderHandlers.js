@@ -27,6 +27,7 @@ async function orders (data) {
 lib.post = async (data) => {
   // validtate Stripe token (eMail provided via headers token)
   const input = _validator.validate('stripeToken', data.payload)
+
   if (input.hasErrors()) {
     return _helpers.resultify(_rCodes.badRequest, { 'Errors': input._errors })
   }
@@ -37,7 +38,7 @@ lib.post = async (data) => {
   }
 
   // find the cart file by user email
-  const cartData = _data.read('carts', tokenData.eMail)
+  const cartData = await _data.read('carts', tokenData.eMail)
   if (!cartData) {
     return _helpers.resultify(_rCodes.OK, {'Message': 'Your cart is empty! Nothing to order!'})
   }
@@ -47,25 +48,20 @@ lib.post = async (data) => {
     token: input.stripeToken,
     date: Date.now(),
     eMail: tokenData.eMail,
-    items: cartData,
     sum: cartData.reduce((acc, val) => acc + val.qty * val.price, 0)
   }
   // try to pay
-  payOrder(orderData, (error, paymentData) => {
-    const res = !error && paymentData ? 200 : _rCodes.serverError
-    return res
-  })
+  return await payOrder(orderData)
 }
 
 // service
-async function payOrder (orderData, callback) {
-  let payload = {
+async function payOrder (orderData) {
+  const payloadString = JSON.stringify({
     'amount': orderData.sum,
     'currency': 'usd',
     'source': 'sk_test_4eC39HqLyjWDarjtT1zdp7dc',
     'description': `Order # ${orderData.date} for ${orderData.eMail}`
-  }
-  const payloadString = JSON.stringify(payload)
+  })
 
   let options = {
     'protocol': 'https:',
@@ -78,30 +74,41 @@ async function payOrder (orderData, callback) {
     }
   }
 
-  let req = _https.request(options, (resp) => {
-    if (resp.statusCode === _rCodes.OK) {
-      const decoder = new StringDecoder('utf-8')
-      var buffer = ''
+  try {
+    let result = await httpRequest(payloadString, options)
+    return _helpers.resultify(_rCodes.OK, result)
+  } catch (e) {
+    return _helpers.resultify(_rCodes.serverError, e)
+  }
+}
 
-      resp.on('data', (data) => {
-        buffer += decoder.write(data)
-      })
+function httpRequest (payloadString, options) {
+  return new Promise((resolve, reject) => {
+    const req = _https.request(options, (resp) => {
+      if (resp.statusCode === _rCodes.OK) {
+        const decoder = new StringDecoder('utf-8')
+        let buffer = ''
 
-      resp.on('end', () => {
-        buffer += decoder.end()
-        callback(false, buffer)
-      })
-    } else {
-      callback(true)
-    }
+        resp.on('data', (data) => {
+          buffer += decoder.write(data)
+        })
+
+        resp.on('end', () => {
+          buffer += decoder.end()
+          resolve(buffer)
+        })
+      } else {
+        reject(new Error('statusCode=' + resp.statusCode))
+      }
+    })
+
+    req.on('error', function (e) {
+      reject(e)
+    })
+
+    req.write(payloadString)
+    req.end()
   })
-
-  req.on('error', function (e) {
-    callback(true)
-  })
-
-  req.write(payloadString)
-  req.end()
 }
 
 module.exports = orders

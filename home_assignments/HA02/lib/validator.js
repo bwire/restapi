@@ -25,7 +25,7 @@ lib.validate = function (fieldsString, container) {
   const inputData = {}
 
   inputData.hasErrors = function () {
-    return this._errors
+    return this._errors !== undefined
   }
 
   // Check that 'fields is an array'
@@ -116,7 +116,7 @@ function getValidationFunctionData (container, field) {
     fnData.params = [field, container[field], 20]
   } else if (field === 'stripeToken') {
     fnData.func = validateString
-    fnData.params = [field, container[field], undefined, 7]
+    fnData.params = [field, container[field]]
   } else if (field === 'menuItemID') {
     fnData.func = validateItemID
     fnData.params = [field, container[field]]

@@ -46,61 +46,73 @@ lib.post = async (data) => {
     return _helpers.resultify(_rCodes.OK, {'Message': 'Your cart is empty! Nothing to order!'})
   }
 
-  let orderData = {
-    token: input.stripeToken,
-    eMail: tokenData.eMail,
-    sum: cartData.reduce((acc, val) => acc + val.qty * val.price, 0)
+  const orderData = {
+    'date': _helpers.formatDate(new Date()),
+    'eMail': tokenData.eMail,
+    'sum': cartData.reduce((acc, val) => acc + val.qty * val.price * 100, 0),
+    'items': cartData
   }
+
   // try to pay
-  return await payOrder(orderData)
+  const payResult = await payOrder(orderData, input.stripeToken)
+  if (payResult.code !== _rCodes.OK) {
+    return payResult
+  }
+
+  // save order information
+  try {
+    await _data.create('orders', orderData.eMail + '-' + orderData.date, orderData)
+    return orderData
+  } catch (e) {
+    return e
+  }
 }
 
 // service
-async function payOrder (orderData) {
+async function payOrder (orderData, token) {
   const payloadString = _querystring.stringify({
-    'amount': 5000,
+    'amount': orderData.sum,
     'currency': 'usd',
-    'source': orderData.token,
+    'source': token,
     'description': `Order # ${orderData.date} for ${orderData.eMail}`
   })
-
-  let options = {
+  const options = {
     'hostname': 'api.stripe.com',
     'path': '/v1/charges',
     'method': 'POST',
     'headers': {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-length': Buffer.byteLength(payloadString),
       'Authorization': `Bearer ${_config.stripeKey}`
     }
   }
 
   try {
-    let result = await httpRequest(payloadString, options)
-    console.log(result)
-    return _helpers.resultify(_rCodes.OK, result)
+    await asyncRequest(payloadString, options)
+    return true
   } catch (e) {
-    console.log(e)
-    return _helpers.resultify(_rCodes.serverError, e)
+    return e
   }
 }
 
-function httpRequest (payloadString, options) {
+function asyncRequest (payloadString, options) {
   return new Promise((resolve, reject) => {
     const req = _https.request(options, (resp) => {
-      if (resp.statusCode === _rCodes.OK) {
-        const decoder = new StringDecoder('utf-8')
-        let buffer = ''
+      const decoder = new StringDecoder('utf-8')
+      let buffer = ''
 
-        resp.on('data', (data) => {
-          buffer += decoder.write(data)
-        })
+      resp.on('data', (data) => {
+        buffer += decoder.write(data)
+      })
 
-        resp.on('end', () => {
-          buffer += decoder.end()
-          resolve(buffer)
-        })
-      } else {
-        reject(new Error('statusCode=' + resp.statusCode))
-      }
+      resp.on('end', () => {
+        buffer += decoder.end()
+        if (resp.statusCode === _rCodes.OK) {
+          resolve(_helpers.resultify(resp.statusCode))
+        } else {
+          reject(_helpers.resultify(resp.statusCode, JSON.parse(buffer)))
+        }
+      })
     })
 
     req.on('error', function (e) {

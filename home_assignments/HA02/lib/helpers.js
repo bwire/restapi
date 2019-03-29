@@ -27,6 +27,17 @@ lib.createRandomString = (strLength) => {
   }
 }
 
+// formatting date
+lib.formatDate = (dt) => {
+  const yy = dt.getFullYear()
+  let mm = dt.getMonth() + 1
+  if (mm < 10) {
+    mm = '0' + mm
+  }
+  const dd = dt.getDate()
+  return `${yy}-${mm}-${dd}`
+}
+
 // cretae the SHA256 hash
 lib.hash = function (str) {
   if (typeof (str) === 'string' && str.length > 0) {

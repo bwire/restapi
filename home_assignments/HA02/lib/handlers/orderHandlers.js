@@ -90,7 +90,7 @@ async function payOrder (orderData, token) {
   }
 
   try {
-    return await asyncRequest(payloadString, options) 
+    return await asyncRequest(payloadString, options)
   } catch (e) {
     return e
   }

@@ -60,10 +60,12 @@ lib.post = async (data) => {
   }
 
   // save order information
+  // TODO Clear cart!!
   try {
     await _data.create('orders', orderData.eMail + '-' + orderData.date, orderData)
     return orderData
   } catch (e) {
+    console.log(e)
     return e
   }
 }
@@ -88,8 +90,7 @@ async function payOrder (orderData, token) {
   }
 
   try {
-    await asyncRequest(payloadString, options)
-    return true
+    return await asyncRequest(payloadString, options) 
   } catch (e) {
     return e
   }
